@@ -5,13 +5,13 @@
 EXE := Snow_Deformation.out
 SRCAPP := source/main.cpp
 OL := -O0
-CPPFLAGS := -std=c++0x
+CPPFLAGS := -std=c++11
 
 EXCLUDESRCS := 
-EXCLUDEDIRS := 
+EXCLUDEDIRS := source/vmath-0.13
 
-SRCS := $(SRCAPP)
-INCLUDE := 
+SRCS := $(SRCAPP) source/vmath-0.13/src/vmath.cpp
+INCLUDE := -Isource/vmath-0.13/src
 
 LDIR := 
 LIBS := -ldl -lglfw
@@ -57,7 +57,7 @@ DEPS := $(OBJS:.o=.d)
 BINDIRS := $(BIN) $(patsubst %,build/%,$(dir $(SRCS)))
 
 # Dummy variable that's never used. Evaluated immidiately which creates all the needed binary directories
-create-output-directories := $(shell for f in $(BINDIRS); do if [ ! -e "$$f" ]; then mkdir "$$f"; fi; done)
+create-output-directories := $(shell for f in $(BINDIRS); do if [ ! -e "$$f" ]; then mkdir -p "$$f"; fi; done)
 
 $(BIN)/$(EXE): $(OBJS)
 	g++ $(CPPFLAGS) -o $@ $^ $(LDIR) $(LIBS)

@@ -1,0 +1,9 @@
+#version 450 core
+out vec4 frag_color;
+
+uniform vec3 in_color;
+
+void main()
+{
+    frag_color = vec4(in_color.r, in_color.g, in_color.b, 1.0);
+}
