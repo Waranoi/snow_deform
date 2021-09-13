@@ -5,8 +5,10 @@ void Object::Draw(GLuint program)
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, nullptr);
-	glUniform3f(glGetUniformLocation(program, "in_color"), color.r, color.g, color.b);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, nullptr);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)(sizeof(float) * 3));
+	glUniform3f(glGetUniformLocation(program, "object_col"), color.r, color.g, color.b);
 	glDrawElements(GL_TRIANGLES, points, GL_UNSIGNED_INT, nullptr);
 }
 
@@ -19,31 +21,92 @@ std::shared_ptr<Object> Object::Box(Vector3f center, Vector3f half_dims, Vector3
 
 	float vertices[] = 
 	{
-		max.x,	min.y,	min.z,
-		max.x,	min.y,	max.z,
-		min.x,	min.y,	max.z,
-		min.x,	min.y,	min.z,
+		// Front
+		max.x, max.y, max.z,
+		0.0f, 0.0f, 1.0f,
+		min.x, max.y, max.z,
+		0.0f, 0.0f, 1.0f,
+		min.x, min.y, max.z,
+		0.0f, 0.0f, 1.0f,
+		max.x, min.y, max.z,
+		0.0f, 0.0f, 1.0f,
 
-		max.x,	max.y,	min.z,
-		max.x,	max.y,	max.z,
-		min.x,	max.y,	max.z,
-		min.x,	max.y,	min.z,
+		// Back
+		min.x, min.y, min.z,
+		0.0f, 0.0f, -1.0f,
+		min.x, max.y, min.z,
+		0.0f, 0.0f, -1.0f,
+		max.x, max.y, min.z,
+		0.0f, 0.0f, -1.0f,
+		max.x, min.y, min.z,
+		0.0f, 0.0f, -1.0f,
+
+		// Right
+		max.x, max.y, max.z,
+		1.0f, 0.0f, 0.0f,
+		max.x, min.y, max.z,
+		1.0f, 0.0f, 0.0f,
+		max.x, min.y, min.z,
+		1.0f, 0.0f, 0.0f,
+		max.x, max.y, min.z,
+		1.0f, 0.0f, 0.0f,
+
+		// Left
+		min.x, min.y, min.z,
+		-1.0f, 0.0f, 0.0f,
+		min.x, min.y, max.z,
+		-1.0f, 0.0f, 0.0f,
+		min.x, max.y, max.z,
+		-1.0f, 0.0f, 0.0f,
+		min.x, max.y, min.z,
+		-1.0f, 0.0f, 0.0f,
+
+		// Up
+		max.x, max.y, max.z,
+		0.0f, 1.0f, 0.0f,
+		max.x, max.y, min.z,
+		0.0f, 1.0f, 0.0f,
+		min.x, max.y, min.z,
+		0.0f, 1.0f, 0.0f,
+		min.x, max.y, max.z,
+		0.0f, 1.0f, 0.0f,
+
+		// Down
+		min.x, min.y, min.z,
+		0.0f, -1.0f, 0.0f,
+		max.x, min.y, min.z,
+		0.0f, -1.0f, 0.0f,
+		max.x, min.y, max.z,
+		0.0f, -1.0f, 0.0f,
+		min.x, min.y, max.z,
+		0.0f, -1.0f, 0.0f
 	};
 
 	int indices[] = 
 	{
-		4, 0, 3,
-		4, 3, 7,
-		2, 6, 7,
-		2, 7, 3,
-		1, 5, 2,
-		5, 6, 2,
-		0, 4, 1,
-		4, 5, 1,
-		4, 7, 5,
-		7, 6, 5,
-		0, 1, 2,
-		0, 2, 3 
+		// Front
+		0, 	1, 	2,
+		0, 	2, 	3,
+
+		// Back
+		4, 	5, 	6,
+		4, 	6, 	7,
+
+		// Right
+		8, 	9, 	10,
+		8, 	10, 11,
+
+		// Left
+		12, 13, 14,
+		12, 14, 15,
+
+		// Up
+		16, 17, 18,
+		16, 18, 19,
+
+		// Down
+		20, 21, 22,
+		20, 22, 23
 	};
 
 	cube->Bind_array();
@@ -63,9 +126,13 @@ std::shared_ptr<Object> Object::Plane(Vector3f center, Vector3f half_dims, Vecto
 	float vertices[] = 
 	{
 		max.x,	center.y,	min.z,
+		0.0f, 	1.0f, 		0.0f,
 		max.x,	center.y,	max.z,
+		0.0f, 	1.0f, 		0.0f,
 		min.x,	center.y,	max.z,
+		0.0f, 	1.0f, 		0.0f,
 		min.x,	center.y,	min.z,
+		0.0f, 	1.0f, 		0.0f,
 	};
 
 	int indices[] = 

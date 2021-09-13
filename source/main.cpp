@@ -60,7 +60,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // Setup vertex shader
-    std::string vs_str = Get_shader("../resources/shaders/simple_mvp_vs");
+    std::string vs_str = Get_shader("../resources/shaders/phong_vs");
     const char* vs_char = vs_str.c_str();
 	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vs, 1, &vs_char, NULL);
@@ -68,7 +68,7 @@ int main()
 	Shader_error_log("[VERTEX SHADER COMPILE ERROR]:", vs);
 
 	// Setup fragment shader
-    std::string fs_str = Get_shader("../resources/shaders/simple_mvp_fs");
+    std::string fs_str = Get_shader("../resources/shaders/phong_fs");
     const char* fs_char = fs_str.c_str();
 	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fs, 1, &fs_char, NULL);
@@ -105,6 +105,8 @@ int main()
 	glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
 	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
 	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
+	glUniform3f(glGetUniformLocation(program, "light_pos"), 0.0f, 30.0f, 0.0f);
+	glUniform3f(glGetUniformLocation(program, "light_col"), 1.0f, 1.0f, 1.0f);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -127,6 +129,8 @@ int main()
 
 			// Acknowledge movement
 			glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
+			Vector3f view_pos = camera.Get_view().getTranslation();
+			glUniform3f(glGetUniformLocation(program, "view_pos"), view_pos.x, view_pos.y, view_pos.z);
 
 			// Draw
 			plane->Draw(program);

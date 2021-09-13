@@ -1,9 +1,11 @@
 #version 450 core
 out vec4 frag_color;
 
-uniform vec3 in_color;
+in vec3 norm;
+
+uniform vec3 object_col;
 
 void main()
 {
-    frag_color = vec4(in_color.r, in_color.g, in_color.b, 1.0);
+    frag_color = vec4(object_col, 1.0);
 }
