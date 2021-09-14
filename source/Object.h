@@ -6,10 +6,11 @@
 class Object
 {
 public:
+	void Rotate(Vector3f rotate);
 	void Draw(GLuint program);
 
 	static std::shared_ptr<Object> Box(Vector3f center, Vector3f half_dims, Vector3f color);
-	static std::shared_ptr<Object> Plane(Vector3f center, Vector3f half_dims, Vector3f color);
+	static std::shared_ptr<Object> Plane(Vector3f center, Vector2f half_dims, Vector3f color);
 
 private:
 	Object();
@@ -21,4 +22,5 @@ private:
 	unsigned int vao, vbo, ebo;
 	int points;
 	Vector3f color;
+	Matrix4f model;
 };

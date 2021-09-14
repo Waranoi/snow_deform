@@ -1,0 +1,13 @@
+#version 450 core
+out vec4 frag_color;
+
+in vec2 tex_coords;
+
+uniform sampler2D tex;
+uniform vec3 object_col;
+
+void main()
+{
+    vec4 depth_color = texture(tex, tex_coords);
+    frag_color = vec4(depth_color.r, depth_color.r, depth_color.r, 1.0);
+}

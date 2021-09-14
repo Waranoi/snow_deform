@@ -9,12 +9,14 @@
 #include "vmath.h"
 #include "Object.h"
 #include "Camera.h"
+#include "Shader.h"
 
 GLFWwindow* window;
 Vector3f movement;
 bool rotate = false;
 Vector3f rotation;
 Vector3f prev_rot;
+bool render_depth = false;
 
 void Shader_error_log(const char* msg, GLuint shader);
 void Program_error_log(const char* msg, GLuint program);
@@ -59,28 +61,9 @@ int main()
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    // Setup vertex shader
-    std::string vs_str = Get_shader("../resources/shaders/phong_vs");
-    const char* vs_char = vs_str.c_str();
-	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vs, 1, &vs_char, NULL);
-	glCompileShader(vs);
-	Shader_error_log("[VERTEX SHADER COMPILE ERROR]:", vs);
-
-	// Setup fragment shader
-    std::string fs_str = Get_shader("../resources/shaders/phong_fs");
-    const char* fs_char = fs_str.c_str();
-	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fs, 1, &fs_char, NULL);
-	glCompileShader(fs);
-	Shader_error_log("[FRAGMENT SHADER COMPILE ERROR]:", fs);
-
-	// Create a program object
-	GLuint program = glCreateProgram();
-	glAttachShader(program, vs);
-	glAttachShader(program, fs);
-	glLinkProgram(program);
-	Program_error_log("[PROGRAM LINK ERROR]:", program);
+    Shader phong("../resources/shaders/phong_vs", "../resources/shaders/phong_fs");
+    Shader simple_tex("../resources/shaders/simple_depth_vs", "../resources/shaders/simple_depth_fs");
+	unsigned int program = phong.Get_program();
 	
 	// Set clear color to gray
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -88,14 +71,14 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	glUseProgram(program);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, nullptr);
 
 	// Objects
-	std::shared_ptr<Object> plane 	= Object::Plane(Vector3f(), Vector3f(10.0f, 0, 10.0f), Vector3f(0.3f, 0.5f, 0.7f));
+	std::shared_ptr<Object> depth_w	= Object::Plane(Vector3f(0, 0, 0), Vector2f(1.0f, 1.0f), Vector3f(0, 1.0f, 0));
+	std::shared_ptr<Object> plane 	= Object::Plane(Vector3f(), Vector2f(10.0f, 10.0f), Vector3f(0.3f, 0.5f, 0.7f));
 	std::shared_ptr<Object> plateau = Object::Box(Vector3f(-5.0f, 1.0f, -5.0f), Vector3f(3.0f, 1.0f, 3.0f), Vector3f(1.0f, 0, 0));
 	std::shared_ptr<Object> cube 	= Object::Box(Vector3f(-3.0f, 1.5f, 5.0f), Vector3f(1.5f, 1.5f, 1.5f), Vector3f(0, 1.0f, 0));
 	std::shared_ptr<Object> tower 	= Object::Box(Vector3f(6.0f, 3.0f, -1.0f), Vector3f(1.0f, 3.0f, 1.0f), Vector3f(0, 0, 1.0f));
+	plane->Rotate(Vector3f(90.0f, 0, 0));
 	
 	// Camera
 	Camera camera;
@@ -108,14 +91,33 @@ int main()
 	glUniform3f(glGetUniformLocation(program, "light_pos"), 0.0f, 30.0f, 0.0f);
 	glUniform3f(glGetUniformLocation(program, "light_col"), 1.0f, 1.0f, 1.0f);
 
+	// Framebuffer objects
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 800, 800, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	unsigned int fbo;
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture, 0);
+
+	int fb_res = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if(fb_res != GL_FRAMEBUFFER_COMPLETE)
+		printf("ERROR::FRAMEBUFFER:: Framebuffer is not complete! %d\n", fb_res);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		auto begin = std::chrono::steady_clock::now();
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         // Game loop
         {
+			program = phong.Get_program();
+			glUseProgram(program);
+
         	// Directional movement
 			camera.Move(movement * 0.1f);
 			if (movement.y > 0.0f)
@@ -133,10 +135,24 @@ int main()
 			glUniform3f(glGetUniformLocation(program, "view_pos"), view_pos.x, view_pos.y, view_pos.z);
 
 			// Draw
+			if (render_depth)
+				glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			else
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			plane->Draw(program);
 			plateau->Draw(program);
 			cube->Draw(program);
 			tower->Draw(program);
+
+			if (render_depth)
+			{
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				program = simple_tex.Get_program();
+				glUseProgram(program);
+				depth_w->Draw(program);
+			}
 		}
 
 		glfwSwapBuffers(window);
@@ -238,7 +254,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	movement.x = right + left;
 	movement.z = forward + backward;
 
-	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	if(key == GLFW_KEY_R && action == GLFW_PRESS)
+        render_depth = !render_depth;
+
+	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
 

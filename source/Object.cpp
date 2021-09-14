@@ -1,15 +1,25 @@
 #include "Object.h"
 
+void Object::Rotate(Vector3f rotate)
+{
+	model = Matrix4f::createRotationAroundAxis(rotate.x, rotate.y, rotate.z) * model;
+}
+
 void Object::Draw(GLuint program)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, nullptr);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)(sizeof(float) * 3));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, nullptr);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
 	glUniform3f(glGetUniformLocation(program, "object_col"), color.r, color.g, color.b);
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, model);
 	glDrawElements(GL_TRIANGLES, points, GL_UNSIGNED_INT, nullptr);
+	glUniform3f(glGetUniformLocation(program, "object_col"), 1, 1, 1);
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
 }
 
 std::shared_ptr<Object> Object::Box(Vector3f center, Vector3f half_dims, Vector3f color)
@@ -24,62 +34,86 @@ std::shared_ptr<Object> Object::Box(Vector3f center, Vector3f half_dims, Vector3
 		// Front
 		max.x, max.y, max.z,
 		0.0f, 0.0f, 1.0f,
+		1.0f, 1.0f,
 		min.x, max.y, max.z,
 		0.0f, 0.0f, 1.0f,
+		0.0f, 1.0f,
 		min.x, min.y, max.z,
 		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f,
 		max.x, min.y, max.z,
 		0.0f, 0.0f, 1.0f,
+		1.0f, 0.0f,
 
 		// Back
 		min.x, min.y, min.z,
 		0.0f, 0.0f, -1.0f,
+		1.0f, 0.0f,
 		min.x, max.y, min.z,
 		0.0f, 0.0f, -1.0f,
+		1.0f, 1.0f,
 		max.x, max.y, min.z,
 		0.0f, 0.0f, -1.0f,
+		0.0f, 1.0f,
 		max.x, min.y, min.z,
 		0.0f, 0.0f, -1.0f,
+		0.0f, 0.0f,
 
 		// Right
 		max.x, max.y, max.z,
 		1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f,
 		max.x, min.y, max.z,
 		1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f,
 		max.x, min.y, min.z,
 		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f,
 		max.x, max.y, min.z,
 		1.0f, 0.0f, 0.0f,
+		1.0f, 1.0f,
 
 		// Left
 		min.x, min.y, min.z,
 		-1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f,
 		min.x, min.y, max.z,
 		-1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f,
 		min.x, max.y, max.z,
 		-1.0f, 0.0f, 0.0f,
+		1.0f, 1.0f,
 		min.x, max.y, min.z,
 		-1.0f, 0.0f, 0.0f,
+		0.0f, 1.0f,
 
 		// Up
 		max.x, max.y, max.z,
 		0.0f, 1.0f, 0.0f,
+		1.0f, 0.0f,
 		max.x, max.y, min.z,
 		0.0f, 1.0f, 0.0f,
+		1.0f, 1.0f,
 		min.x, max.y, min.z,
 		0.0f, 1.0f, 0.0f,
+		0.0f, 1.0f,
 		min.x, max.y, max.z,
 		0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f,
 
 		// Down
 		min.x, min.y, min.z,
 		0.0f, -1.0f, 0.0f,
+		1.0f, 1.0f,
 		max.x, min.y, min.z,
 		0.0f, -1.0f, 0.0f,
+		0.0f, 1.0f,
 		max.x, min.y, max.z,
 		0.0f, -1.0f, 0.0f,
+		0.0f, 0.0f,
 		min.x, min.y, max.z,
-		0.0f, -1.0f, 0.0f
+		0.0f, -1.0f, 0.0f,
+		1.0f, 0.0f
 	};
 
 	int indices[] = 
@@ -116,24 +150,44 @@ std::shared_ptr<Object> Object::Box(Vector3f center, Vector3f half_dims, Vector3
 	return cube;
 }
 
-std::shared_ptr<Object> Object::Plane(Vector3f center, Vector3f half_dims, Vector3f color)
+std::shared_ptr<Object> Object::Plane(Vector3f center, Vector2f half_dims, Vector3f color)
 {
 	std::shared_ptr<Object> plane(new Object());
 
-	Vector3f min = center - half_dims;
-	Vector3f max = center + half_dims;
+	Vector3f min = center - Vector3f(half_dims.x, half_dims.y, 0);
+	Vector3f max = center + Vector3f(half_dims.x, half_dims.y, 0);
 
 	float vertices[] = 
 	{
-		max.x,	center.y,	min.z,
-		0.0f, 	1.0f, 		0.0f,
-		max.x,	center.y,	max.z,
-		0.0f, 	1.0f, 		0.0f,
-		min.x,	center.y,	max.z,
-		0.0f, 	1.0f, 		0.0f,
-		min.x,	center.y,	min.z,
-		0.0f, 	1.0f, 		0.0f,
+		max.x,	max.y,	center.z,
+		0.0f, 	0.0f, 	1.0f,
+		1.0f, 	1.0f,
+		min.x,	max.y,	center.z,
+		0.0f, 	0.0f, 	1.0f,
+		0.0f, 	1.0f,
+		min.x,	min.y,	center.z,
+		0.0f, 	0.0f, 	1.0f,
+		0.0f, 	0.0f,
+		max.x,	min.y,	center.z,
+		0.0f, 	0.0f, 	1.0f,
+		1.0f, 	0.0f
 	};
+
+/*	float vertices[] = 
+	{
+		max.x,	center.y,	min.y,
+		0.0f, 	1.0f, 		0.0f,
+		1.0f, 	0.0f,
+		max.x,	center.y,	max.y,
+		0.0f, 	1.0f, 		0.0f,
+		1.0f, 	1.0f,
+		min.x,	center.y,	max.y,
+		0.0f, 	1.0f, 		0.0f,
+		0.0f, 	1.0f,
+		min.x,	center.y,	min.y,
+		0.0f, 	1.0f, 		0.0f,
+		0.0f, 	0.0f,
+	};*/
 
 	int indices[] = 
 	{
