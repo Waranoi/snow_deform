@@ -2,8 +2,11 @@
 #include <iostream>
 #include <fstream>
 
-Shader::Shader(const char* path_vs, const char* path_fs)
+Shader::Shader(const char* path_vs, const char* path_fs, const char* path_tc, const char* path_te)
 {
+	// Create a program object
+	program = glCreateProgram();
+
 	// Setup vertex shader
     std::string vs_str = Load_shader(path_vs);
     const char* vs_char = vs_str.c_str();
@@ -11,6 +14,7 @@ Shader::Shader(const char* path_vs, const char* path_fs)
 	glShaderSource(vs, 1, &vs_char, NULL);
 	glCompileShader(vs);
 	Shader_error_log("[VERTEX SHADER COMPILE ERROR]:", vs);
+	glAttachShader(program, vs);
 
 	// Setup fragment shader
     std::string fs_str = Load_shader(path_fs);
@@ -19,11 +23,33 @@ Shader::Shader(const char* path_vs, const char* path_fs)
 	glShaderSource(fs, 1, &fs_char, NULL);
 	glCompileShader(fs);
 	Shader_error_log("[FRAGMENT SHADER COMPILE ERROR]:", fs);
-
-	// Create a program object
-	program = glCreateProgram();
-	glAttachShader(program, vs);
 	glAttachShader(program, fs);
+
+	// Setup tessellation control shader
+	if (path_tc)
+	{
+	    std::string tc_str = Load_shader(path_tc);
+	    const char* tc_char = tc_str.c_str();
+		tc = glCreateShader(GL_TESS_CONTROL_SHADER);
+		glShaderSource(tc, 1, &tc_char, NULL);
+		glCompileShader(tc);
+		Shader_error_log("[TESSELATION CONTROL SHADER COMPILE ERROR]:", tc);
+		glAttachShader(program, tc);
+	}
+
+	// Setup tessellation evaluation shader
+	if (path_te)
+	{
+	    std::string te_str = Load_shader(path_te);
+	    const char* te_char = te_str.c_str();
+		te = glCreateShader(GL_TESS_EVALUATION_SHADER);
+		glShaderSource(te, 1, &te_char, NULL);
+		glCompileShader(te);
+		Shader_error_log("[TESSELATION EVALUATION SHADER COMPILE ERROR]:", te);
+		glAttachShader(program, te);
+	}
+
+	// Link program object
 	glLinkProgram(program);
 	Program_error_log("[PROGRAM LINK ERROR]:", program);
 }

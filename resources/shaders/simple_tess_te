@@ -1,0 +1,23 @@
+#version 450 core
+
+layout(quads, equal_spacing, ccw) in;
+
+uniform mat4 proj;
+uniform mat4 view;
+
+in vec3 es_pos[];
+in vec3 es_norm[];
+
+void main()
+{
+    // Interpolate along bottom edge using x component of the
+    // tessellation coordinate
+    vec3 p1 = mix(es_pos[0], es_pos[1], gl_TessCoord.x);
+    // Interpolate along top edge using x component of the
+    // tessellation coordinate
+    vec3 p2 = mix(es_pos[3], es_pos[2], gl_TessCoord.x);
+    // Now interpolate those two results using the y component
+    // of tessellation coordinate
+    vec3 p = mix(p1, p2, gl_TessCoord.y);
+    gl_Position = proj * view * vec4(p, 1);
+}

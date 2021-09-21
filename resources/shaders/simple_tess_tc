@@ -1,0 +1,23 @@
+#version 450 core
+
+// define the number of CPs in the output patch
+layout (vertices = 4) out;
+
+in vec3 cs_pos[];
+in vec3 cs_norm[];
+
+out vec3 es_pos[];
+out vec3 es_norm[];
+
+void main()
+{
+    es_norm[gl_InvocationID] = cs_norm[gl_InvocationID];
+    es_pos[gl_InvocationID] = cs_pos[gl_InvocationID];
+
+    gl_TessLevelOuter[0] = 4;
+    gl_TessLevelOuter[1] = 4;
+    gl_TessLevelOuter[2] = 4;
+    gl_TessLevelOuter[3] = 4;
+    gl_TessLevelInner[0] = 4;
+    gl_TessLevelInner[1] = 4;
+}
