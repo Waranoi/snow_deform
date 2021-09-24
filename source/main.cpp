@@ -7,9 +7,9 @@
 #include <thread>
 #include <algorithm>
 #include "vmath.h"
-#include "Object.h"
+#include "Shape_renderer.h"
+#include "Terrain_renderer.h"
 #include "Camera.h"
-#include "Shader.h"
 
 GLFWwindow* window;
 Vector3f movement;
@@ -17,10 +17,6 @@ bool rotate = false;
 Vector3f rotation;
 Vector3f prev_rot;
 bool render_depth = false;
-
-void Shader_error_log(const char* msg, GLuint shader);
-void Program_error_log(const char* msg, GLuint program);
-std::string Get_shader(const char* path);
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
@@ -61,66 +57,21 @@ int main()
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    Shader tess("../resources/shaders/simple_tess_vs", "../resources/shaders/simple_tess_fs", "../resources/shaders/simple_tess_tc", "../resources/shaders/simple_tess_te");
-	unsigned int program = tess.Get_program();
+    // Init renderers
+	Shape_renderer::Init();
+	Terrain_renderer::Init();
 	
-	// Set clear color to gray
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-
 	glEnable(GL_DEPTH_TEST);
-
 	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
-	glPatchParameteri(GL_PATCH_VERTICES, 4);
-
-	glUseProgram(program);
-
 	// Objects
-	float vertices[] = 
-	{
-		-50.0f,	0.0f,	-50.0f,
-		0.0f, 	1.0f, 	0.0f,
-		0.0f, 	0.0f,
-		50.0f,	0.0f,	-50.0f,
-		0.0f, 	1.0f, 	0.0f,
-		1.0f, 	0.0f,
-		50.0f,	0.0f,	50.0f,
-		0.0f, 	1.0f, 	0.0f,
-		1.0f,	1.0f,
-		-50.0f,	0.0f,	50.0f,
-		0.0f, 	1.0f, 	0.0f,
-		0.0f,	1.0f
-	};
-
-	int indices[] = 
-	{
-		0, 1, 2, 3
-	};
-
-	unsigned int vao, vbo, ebo;
-
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	glBindVertexArray(0);
+	Object cube = Shape_renderer::Create_box(Vector3f(0.0f, 2.0f, 0.0f), Vector3f(0.5f, 0.5f, 0.5f), Vector3f(1.0f, 0, 0));
+	Object patch = Terrain_renderer::Create_patch(Vector3f(), Vector2f(50.0f, 50.0f), Vector3f(0.0f, 0.0f, 1.0f));
 	
 	// Camera
 	Camera camera;
-	camera.Move(Vector3f(0, 2.0f, 0));
-
-	glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
-	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
-	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
-	glUniform3f(glGetUniformLocation(program, "light_pos"), 0.0f, 30.0f, 0.0f);
-	glUniform3f(glGetUniformLocation(program, "light_col"), 1.0f, 1.0f, 1.0f);
+	camera.Move(Vector3f(0.0f, 2.0f, 2.0f));
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -139,22 +90,10 @@ int main()
 			camera.Rotate(prev_rot - rotation);
 			prev_rot = rotation;
 
-			// Acknowledge movement
-			glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
-			Vector3f view_pos = camera.Get_view().getTranslation();
-			glUniform3f(glGetUniformLocation(program, "view_pos"), view_pos.x, view_pos.y, view_pos.z);
-
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glBindVertexArray(vao);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-			glEnableVertexAttribArray(0);
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, nullptr);
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
-			glUniform3f(glGetUniformLocation(program, "object_col"), 0.5f, 0.5f, 0.5f);
-			glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
-			glDrawElements(GL_PATCHES, 4, GL_UNSIGNED_INT, 0);
+			// Draw
+			Shape_renderer::Draw(&cube, 1, camera);
+			Terrain_renderer::Draw(&patch, 1, camera);
 		}
 
 		glfwSwapBuffers(window);
@@ -165,52 +104,6 @@ int main()
 		auto target = std::chrono::milliseconds(1000 / 30);
 		std::this_thread::sleep_for(target);
 	}
-}
-
-void Shader_error_log(const char* msg, GLuint shader)
-{
-	GLint log_length;
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
-	if (log_length > 1)
-	{
-		GLchar* buf = new GLchar[log_length];
-		glGetShaderInfoLog(shader, log_length, NULL, buf);
-		printf("%s %s %d\n", msg, buf, log_length);
-		delete[] buf;
-	}
-}
-
-void Program_error_log(const char* msg, GLuint program)
-{
-	GLint log_length;
-	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &log_length);
-	if (log_length > 1)
-	{
-		GLchar* buf = new GLchar[log_length];
-		glGetProgramInfoLog(program, log_length, NULL, buf);
-		printf("%s %s \n", msg, buf);
-		delete[] buf;
-	}
-}
-
-std::string Get_shader(const char* path)
-{
-	std::string content;
-	std::ifstream file_stream(path, std::ios::in);
-
-	if (!file_stream.is_open()) {
-		std::cerr << "Could not read file " << path << ". File does not exist." << std::endl;
-		return nullptr;
-	}
-
-	std::string line = "";
-	while (!file_stream.eof()) {
-		std::getline(file_stream, line);
-		content.append(line + "\n");
-	}
-
-	file_stream.close();
-	return content;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)

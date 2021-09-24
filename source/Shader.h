@@ -1,3 +1,4 @@
+#pragma once
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <memory>
@@ -5,6 +6,7 @@
 class Shader
 {
 public:
+	Shader();
 	Shader(const char* path_vs, const char* path_fs, const char* path_tc, const char* path_te);
 	unsigned int Get_program();
 

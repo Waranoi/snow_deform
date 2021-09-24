@@ -2,6 +2,11 @@
 #include <iostream>
 #include <fstream>
 
+Shader::Shader()
+{
+	
+}
+
 Shader::Shader(const char* path_vs, const char* path_fs, const char* path_tc, const char* path_te)
 {
 	// Create a program object
