@@ -7,6 +7,7 @@ Camera::Camera()
 	projection[10] = -(far/(far-near));
 	projection[11] = -1;
 	projection[14] = -((far*near)/(far-near));
+	rot_x = 0;
 }
 
 void Camera::Move(Vector3f move)

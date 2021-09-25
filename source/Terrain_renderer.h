@@ -7,8 +7,8 @@
 namespace Terrain_renderer
 {
 	void Init();
-	void Draw(Object *objects, int count, Camera camera);
-	Object Create_patch(Vector3f center, Vector2f half_dims, Vector3f color);
+	void Draw(Object *objects, int count, Camera camera, unsigned int color_map);
+	Object Create_patch(Vector2f min_pos, Vector2f max_pos, Vector2f min_uv, Vector2f max_uv, Vector3f color);
 	
 	extern Shader shader;
 };

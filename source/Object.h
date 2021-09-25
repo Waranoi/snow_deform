@@ -9,7 +9,7 @@ struct Object
 	void Bind_vertices(float* vertices, int length);
 	void Bind_indices(int* indices, int length);
 
-	unsigned int vao, vbo, ebo;
+	unsigned int vao, vbo, ebo, color_map;
 	int points;
 	Vector3f color;
 	Matrix4f model;

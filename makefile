@@ -46,7 +46,6 @@ SRCS += $(wildcard $(SRCDIRS:%=%/*.cc))
 SRCS := $(filter-out $(EXCLUDESRCS),$(SRCS))
 # Set all source directories as include folders, in a valid format
 INCLUDE += $(SRCDIRS:%=-I%) -MMD -MP
-$(info $(SRCDIRS))
 
 # TODO Remember to check for duplicates and abort if found
 # Create object and dependency files from source files below the binary folder

@@ -9,7 +9,7 @@ void Terrain_renderer::Init()
 	Terrain_renderer::shader = Shader("../resources/shaders/simple_tess_vs", "../resources/shaders/simple_tess_fs", "../resources/shaders/simple_tess_tc", "../resources/shaders/simple_tess_te");
 }
 
-void Terrain_renderer::Draw(Object *objects, int count, Camera camera)
+void Terrain_renderer::Draw(Object *objects, int count, Camera camera, unsigned int color_map)
 {
 	unsigned int program = Terrain_renderer::shader.Get_program();
 	glUseProgram(program);
@@ -17,6 +17,7 @@ void Terrain_renderer::Draw(Object *objects, int count, Camera camera)
 	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
 	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
+	glBindTexture(GL_TEXTURE_2D, color_map);
 
 	for (int i = 0; i < count; i++)
 	{
@@ -25,8 +26,10 @@ void Terrain_renderer::Draw(Object *objects, int count, Camera camera)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object.ebo);
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, nullptr);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
 		glUniform3fv(glGetUniformLocation(program, "object_col"), 1, object.color);
 		glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
 		glDrawElements(GL_PATCHES, 4, GL_UNSIGNED_INT, 0);
@@ -35,25 +38,22 @@ void Terrain_renderer::Draw(Object *objects, int count, Camera camera)
 	}
 }
 
-Object Terrain_renderer::Create_patch(Vector3f center, Vector2f half_dims, Vector3f color)
+Object Terrain_renderer::Create_patch(Vector2f min_pos, Vector2f max_pos, Vector2f min_uv, Vector2f max_uv, Vector3f color)
 {
-	Vector3f min = center - Vector3f(half_dims.x, 0, half_dims.y);
-	Vector3f max = center + Vector3f(half_dims.x, 0, half_dims.y);
-
 	float vertices[] = 
 	{
-		min.x,	center.y,	min.z,
-		0.0f, 	1.0f, 		0.0f,
-		0.0f, 	0.0f,
-		max.x,	center.y,	min.z,
-		0.0f, 	1.0f, 		0.0f,
-		1.0f, 	0.0f,
-		max.x,	center.y,	max.z,
-		0.0f, 	1.0f, 		0.0f,
-		1.0f, 	1.0f,
-		min.x,	center.y,	max.z,
-		0.0f, 	1.0f, 		0.0f,
-		0.0f, 	1.0f
+		min_pos.x,	0.0f,		min_pos.y,
+		0.0f, 		1.0f, 		0.0f,
+		min_uv.x, 	min_uv.y,
+		max_pos.x,	0.0f,		min_pos.y,
+		0.0f, 		1.0f, 		0.0f,
+		max_uv.x, 	min_uv.y,
+		max_pos.x,	0.0f,		max_pos.y,
+		0.0f, 		1.0f, 		0.0f,
+		max_uv.x, 	max_uv.y,
+		min_pos.x,	0.0f,		max_pos.y,
+		0.0f, 		1.0f, 		0.0f,
+		min_uv.x, 	max_uv.y
 	};
 
 	int indices[] = 

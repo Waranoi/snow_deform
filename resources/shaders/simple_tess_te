@@ -7,6 +7,9 @@ uniform mat4 view;
 
 in vec3 es_pos[];
 in vec3 es_norm[];
+in vec2 es_tex_coord[];
+
+out vec2 tex_coord;
 
 void main()
 {
@@ -20,4 +23,9 @@ void main()
     // of tessellation coordinate
     vec3 p = mix(p1, p2, gl_TessCoord.y);
     gl_Position = proj * view * vec4(p, 1);
+
+    // Interpolate texture coordinates
+    float t1 = mix(es_tex_coord[0].x, es_tex_coord[1].x, gl_TessCoord.x);
+    float t2 = mix(es_tex_coord[0].y, es_tex_coord[3].y, gl_TessCoord.y);
+    tex_coord = vec2(t1, t2);
 }

@@ -1,3 +1,5 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -58,16 +60,33 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // Init renderers
-	Shape_renderer::Init();
 	Terrain_renderer::Init();
 	
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+	//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+	// Textures
+	int width, height, nrChannels;
+	unsigned char *color_data = stbi_load("../resources/textures/lroc_color_poles_1k.jpg", &width, &height, &nrChannels, 0);
+
+	unsigned int color_map;
+	glGenTextures(1, &color_map);
+	glBindTexture(GL_TEXTURE_2D, color_map);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, color_data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(color_data);
+
+	//int width, height, nrChannels;
+	//unsigned char *height_data = stbi_load("../resources/textures/ldem_4.tif", &width, &height, &nrChannels, 0);
+
+	/*unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, data);*/
 
 	// Objects
-	Object cube = Shape_renderer::Create_box(Vector3f(0.0f, 2.0f, 0.0f), Vector3f(0.5f, 0.5f, 0.5f), Vector3f(1.0f, 0, 0));
-	Object patch = Terrain_renderer::Create_patch(Vector3f(), Vector2f(50.0f, 50.0f), Vector3f(0.0f, 0.0f, 1.0f));
+	Object patch = Terrain_renderer::Create_patch(Vector2f(-100, -50), Vector2f(100, 50), Vector2f(0, 0), Vector2f(1, 1), Vector3f(0.0f, 0.0f, 1.0f));
 	
 	// Camera
 	Camera camera;
@@ -92,8 +111,7 @@ int main()
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			// Draw
-			Shape_renderer::Draw(&cube, 1, camera);
-			Terrain_renderer::Draw(&patch, 1, camera);
+			Terrain_renderer::Draw(&patch, 1, camera, color_map);
 		}
 
 		glfwSwapBuffers(window);
