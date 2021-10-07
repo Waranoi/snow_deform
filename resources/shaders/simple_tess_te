@@ -1,9 +1,7 @@
 #version 450 core
+#define PI 3.1415926538
 
 layout(quads, equal_spacing, ccw) in;
-
-uniform mat4 proj;
-uniform mat4 view;
 
 in vec3 es_pos[];
 in vec3 es_norm[];
@@ -11,21 +9,43 @@ in vec2 es_tex_coord[];
 
 out vec2 tex_coord;
 
+uniform float radius = 0;
+uniform mat4 proj;
+uniform mat4 view;
+layout (binding = 1) uniform sampler2D height_map;
+
 void main()
 {
-    // Interpolate along bottom edge using x component of the
-    // tessellation coordinate
-    vec3 p1 = mix(es_pos[0], es_pos[1], gl_TessCoord.x);
-    // Interpolate along top edge using x component of the
-    // tessellation coordinate
-    vec3 p2 = mix(es_pos[3], es_pos[2], gl_TessCoord.x);
-    // Now interpolate those two results using the y component
-    // of tessellation coordinate
-    vec3 p = mix(p1, p2, gl_TessCoord.y);
-    gl_Position = proj * view * vec4(p, 1);
-
     // Interpolate texture coordinates
     float t1 = mix(es_tex_coord[0].x, es_tex_coord[1].x, gl_TessCoord.x);
     float t2 = mix(es_tex_coord[0].y, es_tex_coord[3].y, gl_TessCoord.y);
     tex_coord = vec2(t1, t2);
+
+    //float height = texture(height_map, tex_coord).x;
+
+    vec3 p;
+    if (radius > 0)
+    {
+        float lat = tex_coord.x * 2 * PI;
+        float lon = tex_coord.y * PI;
+
+        float x = radius * cos(lat) * sin(lon);
+        float y = radius * sin(lat) * sin(lon);
+        float z = radius * cos(lon);
+        p = vec3(x, y, z);
+    }
+    else
+    {
+        // Interpolate along bottom edge using x component of the
+        // tessellation coordinate
+        vec3 p1 = mix(es_pos[0], es_pos[1], gl_TessCoord.x);
+        // Interpolate along top edge using x component of the
+        // tessellation coordinate
+        vec3 p2 = mix(es_pos[3], es_pos[2], gl_TessCoord.x);
+        // Now interpolate those two results using the y component
+        // of tessellation coordinate
+        p = mix(p1, p2, gl_TessCoord.y);
+    }
+
+    gl_Position = proj * view * vec4(p, 1);
 }

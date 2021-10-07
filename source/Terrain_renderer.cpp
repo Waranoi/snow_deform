@@ -9,15 +9,19 @@ void Terrain_renderer::Init()
 	Terrain_renderer::shader = Shader("../resources/shaders/simple_tess_vs", "../resources/shaders/simple_tess_fs", "../resources/shaders/simple_tess_tc", "../resources/shaders/simple_tess_te");
 }
 
-void Terrain_renderer::Draw(Object *objects, int count, Camera camera, unsigned int color_map)
+void Terrain_renderer::Draw(Object *objects, int count, Camera camera, unsigned int color_map, unsigned int height_map, float radius)
 {
 	unsigned int program = Terrain_renderer::shader.Get_program();
 	glUseProgram(program);
+	glUniform1f(glGetUniformLocation(program, "radius"), radius);
 	glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
 	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
 	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, color_map);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, height_map);
 
 	for (int i = 0; i < count; i++)
 	{

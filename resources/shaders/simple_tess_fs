@@ -4,7 +4,7 @@ in vec2 tex_coord;
 out vec4 frag_color;
 
 uniform vec3 object_col;
-uniform sampler2D color_map;
+layout (binding = 0) uniform sampler2D color_map;
 
 void main()
 {
