@@ -7,6 +7,7 @@ in vec3 es_pos[];
 in vec3 es_norm[];
 in vec2 es_tex_coord[];
 
+out vec3 norm;
 out vec2 tex_coord;
 
 uniform float radius = 0;
@@ -21,8 +22,6 @@ void main()
     float t2 = mix(es_tex_coord[0].y, es_tex_coord[3].y, gl_TessCoord.y);
     tex_coord = vec2(t1, t2);
 
-    //float height = texture(height_map, tex_coord).x;
-
     vec3 p;
     if (radius > 0)
     {
@@ -33,6 +32,7 @@ void main()
         float y = radius * sin(lat) * sin(lon);
         float z = radius * cos(lon);
         p = vec3(x, y, z);
+        norm = normalize(p);
     }
     else
     {
@@ -45,7 +45,11 @@ void main()
         // Now interpolate those two results using the y component
         // of tessellation coordinate
         p = mix(p1, p2, gl_TessCoord.y);
+        norm = es_norm[0];
     }
 
-    gl_Position = proj * view * vec4(p, 1);
+    float height = texture(height_map, tex_coord).x;
+
+    vec3 final_pos = p + norm * height;
+    gl_Position = proj * view * vec4(final_pos, 1);
 }
