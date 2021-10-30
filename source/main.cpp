@@ -19,7 +19,6 @@ bool rotate = false;
 Vector3f rotation;
 Vector3f prev_rot;
 bool render_depth = false;
-Object patches[20000];
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
@@ -61,49 +60,36 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // Init renderers
-	Terrain_renderer::Init();
+	Shape_renderer::Init();
 	
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+	//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 	// Textures
-	int color_w, color_h, color_chan;
-	unsigned char *color_data = stbi_load("../resources/textures/lroc_color_poles_1k.jpg", &color_w, &color_h, &color_chan, 0);
+	int color_w = 256;
+	int color_h = 256;
+	unsigned char color_data[color_w * color_h];
+	for (int y = 0; y < color_h; y++)
+	{
+		for (int x = 0; x < color_w; x++)
+		{
+			color_data[y*color_w + x] = x;
+		}
+	}
 
 	unsigned int color_map;
 	glGenTextures(1, &color_map);
 	glBindTexture(GL_TEXTURE_2D, color_map);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_w, color_h, 0, GL_RGB, GL_UNSIGNED_BYTE, color_data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, color_w, color_h, 0, GL_RED, GL_UNSIGNED_BYTE, color_data);
 	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(color_data);
-
-	int heigh_w, height_h, height_chan;
-	unsigned char *height_data = stbi_load("../resources/textures/ldem_3_8bit.jpg", &heigh_w, &height_h, &height_chan, 0);
-
-	unsigned int height_map;
-	glGenTextures(1, &height_map);
-	glBindTexture(GL_TEXTURE_2D, height_map);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, heigh_w, height_h, 0, GL_RED, GL_UNSIGNED_BYTE, height_data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(height_data);
 
 	// Objects
-	int i = 0;
-	const float uv_step[2] = {1.0f / 200.0f, 1.0f / 100.0f};
-	for (int x = 0; x < 200; x++)
-	{
-		for (int y = 0; y < 100; y++)
-		{
-			patches[i] = Terrain_renderer::Create_patch(Vector2f(-100 + x, -50 + y), Vector2f(-100 + x + 1, -50 + y + 1), Vector2f(uv_step[0] * x, uv_step[1] * y), Vector2f(uv_step[0] * (x + 1), uv_step[1] * (y + 1)), Vector3f(0.0f, 0.0f, 1.0f));
-			i++;
-		}
-	}
+	Object plane = Shape_renderer::Create_plane(Vector3f(), Vector2f(50, 50), Vector3f(0, 1, 0), color_map);
 	
 	// Camera
 	Camera camera;
 	camera.Move(Vector3f(0.0f, 0.0f, 60.0f));
-	camera.Rotate(Vector3f(0.0f, 0.0f, 0.0f));
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -124,7 +110,7 @@ int main()
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			// Draw
-			Terrain_renderer::Draw(patches, 20000, camera, color_map, height_map, 30);
+			Shape_renderer::Draw(&plane, 1, camera);
 		}
 
 		glfwSwapBuffers(window);

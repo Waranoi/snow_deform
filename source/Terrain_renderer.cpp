@@ -17,6 +17,12 @@ void Terrain_renderer::Draw(Object *objects, int count, Camera camera, unsigned 
 	glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
 	glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
 	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
+
+	// Will there be a noticeable seam between the edges of a texture if I use GL_CLAMP_TO_EDGE instead
+	// of GL_NEAREST if the edges of the plane we're mapping to are wrapped around to meet each other?
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, color_map);
@@ -28,15 +34,19 @@ void Terrain_renderer::Draw(Object *objects, int count, Camera camera, unsigned 
 		Object object = objects[i];
 		glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object.ebo);
+
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, nullptr);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
+
 		glUniform3fv(glGetUniformLocation(program, "object_col"), 1, object.color);
 		glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
+
 		glDrawElements(GL_PATCHES, 4, GL_UNSIGNED_INT, 0);
+
 		glUniform3fv(glGetUniformLocation(program, "object_col"), 1, Vector3f(1, 1, 1));
 		glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
 	}

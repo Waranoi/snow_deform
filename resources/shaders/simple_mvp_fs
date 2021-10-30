@@ -2,10 +2,16 @@
 out vec4 frag_color;
 
 in vec3 norm;
+in vec2 tex_coord;
 
 uniform vec3 object_col;
+uniform bool use_texture = false;
+layout (binding = 0) uniform sampler2D color_map;
 
 void main()
 {
-    frag_color = vec4(object_col, 1.0);
+    if (use_texture)
+        frag_color = texture(color_map, tex_coord);
+    else
+        frag_color = vec4(object_col, 1.0);
 }
