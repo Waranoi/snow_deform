@@ -60,6 +60,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // Init renderers
+    Terrain_renderer::Init();
 	Shape_renderer::Init();
 	
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -67,29 +68,40 @@ int main()
 	//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 	// Textures
-	int color_w = 256;
-	int color_h = 256;
-	unsigned char color_data[color_w * color_h];
-	for (int y = 0; y < color_h; y++)
-	{
-		for (int x = 0; x < color_w; x++)
-		{
-			color_data[y*color_w + x] = x;
-		}
-	}
+	int color_w, color_h, color_chan;
+	unsigned char *color_data = stbi_load("../resources/textures/snow.jpg", &color_w, &color_h, &color_chan, 0);
 
 	unsigned int color_map;
 	glGenTextures(1, &color_map);
 	glBindTexture(GL_TEXTURE_2D, color_map);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, color_w, color_h, 0, GL_RED, GL_UNSIGNED_BYTE, color_data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, color_w, color_h, 0, GL_RGB, GL_UNSIGNED_BYTE, color_data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(color_data);
+
+	int height_w = 256;
+	int height_h = 256;
+	int height_tot = height_w * height_h;
+	float height_data[height_tot];
+	for (int i = 0; i < height_tot; i++)
+	{
+		height_data[i] = 10;
+	}
+
+	unsigned int height_map;
+	glGenTextures(1, &height_map);
+	glBindTexture(GL_TEXTURE_2D, height_map);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, height_w, height_h, 0, GL_RED, GL_FLOAT, height_data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	// Objects
-	Object plane = Shape_renderer::Create_plane(Vector3f(), Vector2f(50, 50), Vector3f(0, 1, 0), color_map);
+	Object snow = Terrain_renderer::Create_patch(Vector2f(-50, -50), Vector2f(50, 50), Vector2f(0, 0), Vector2f(1, 1), Vector3f(0, 0, 1));
+	Object ground = Shape_renderer::Create_plane(Vector3f(), Vector2f(50, 50), Vector3f(0, 1, 0));
+	ground.Rotate(Vector3f(-90.0f, 0.0f, 0.0f));
 	
 	// Camera
 	Camera camera;
-	camera.Move(Vector3f(0.0f, 0.0f, 60.0f));
+	camera.Move(Vector3f(0.0f, 20.0f, 60.0f));
+	camera.Rotate(Vector3f(-30.0f, 0.0f, 0.0f));
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -110,7 +122,8 @@ int main()
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			// Draw
-			Shape_renderer::Draw(&plane, 1, camera);
+			Terrain_renderer::Draw(&snow, 1, camera, color_map, height_map);
+			Shape_renderer::Draw(&ground, 1, camera);
 		}
 
 		glfwSwapBuffers(window);
