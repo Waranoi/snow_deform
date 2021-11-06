@@ -47,10 +47,10 @@ Camera Camera::CreateOrthographic()
 	Camera camera;
 	float far = 10.0f;
 	float near = 0.0f;
-	float left = -10.0f;
-	float right = 10.0f;
-	float top = 10.0f;
-	float bot = -10.0f;
+	float left = -5.0f;
+	float right = 5.0f;
+	float top = 5.0f;
+	float bot = -5.0f;
 	camera.projection[0] = 2 / (right-left);
 	camera.projection[5] = 2 / (top-bot);
 	camera.projection[10] = -2 / (far-near);

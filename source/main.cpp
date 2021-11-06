@@ -116,14 +116,15 @@ int main()
 	// Objects
 	Object snow = Terrain_renderer::Create_patch(Vector2f(-50, -50), Vector2f(50, 50), Vector2f(0, 0), Vector2f(1, 1), Vector3f(0, 0, 1));
 	Object ground = Shape_renderer::Create_plane(Vector3f(), Vector2f(50, 50), Vector3f(0, 1, 0));
-	ground.Rotate(Vector3f(-90.0f, 0.0f, 0.0f));
-	Object cube = Shape_renderer::Create_box(Vector3f(0, 0, -10), Vector3f(5, 5, 5), Vector3f(1, 0, 0));
+	ground.Rotate(Vector3f(90.0f, 0.0f, 0.0f));
+	Object plane = Shape_renderer::Create_plane(Vector3f(), Vector2f(5, 5), Vector3f(1, 1, 0));
+	plane.Rotate(Vector3f(45, 0, 0));
 	Object depth_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), fbo_texture);
 	
 	// Camera
 	//Camera camera = Camera::CreatePerspective();
 	Camera camera = Camera::CreateOrthographic();
-	camera.Move(Vector3f(0.0f, 0.0f, 0.0f));
+	camera.Move(Vector3f(0.0f, 0.0f, 5.0f));
 	camera.Rotate(Vector3f(0.0f, 0.0f, 0.0f));
 
 	while (!glfwWindowShouldClose(window))
@@ -143,16 +144,16 @@ int main()
 			camera.Rotate(prev_rot - rotation);
 			prev_rot = rotation;
 
-			//glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			// Draw
 			//Terrain_renderer::Draw(&snow, 1, camera, color_map, height_map);
 			//Shape_renderer::Draw(&ground, 1, camera);
-			Shape_renderer::Draw(&cube, 1, camera);
+			Shape_renderer::Draw(&plane, 1, camera);
 
-			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			//Shape_renderer::Draw(&depth_display, 1, Camera());
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			Shape_renderer::Draw(&depth_display, 1, Camera());
 		}
 
 		glfwSwapBuffers(window);
