@@ -13,6 +13,8 @@
 #include "Terrain_renderer.h"
 #include "Camera.h"
 
+unsigned int window_w = 800;
+unsigned int window_h = 800;
 GLFWwindow* window;
 Vector3f movement;
 bool rotate = false;
@@ -36,7 +38,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    window = glfwCreateWindow(800, 800, "Snow Deform", NULL, NULL);
+    window = glfwCreateWindow(window_w, window_h, "Snow Deform", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -66,6 +68,24 @@ int main()
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+	// Framebuffer objects
+	unsigned int fbo_texture;
+	glGenTextures(1, &fbo_texture);
+	glBindTexture(GL_TEXTURE_2D, fbo_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, window_w, window_h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	unsigned int fbo;
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fbo_texture, 0);
+
+	int fb_res = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if(fb_res != GL_FRAMEBUFFER_COMPLETE)
+		printf("ERROR::FRAMEBUFFER:: Framebuffer is not complete! %d\n", fb_res);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Textures
 	int color_w, color_h, color_chan;
@@ -97,11 +117,14 @@ int main()
 	Object snow = Terrain_renderer::Create_patch(Vector2f(-50, -50), Vector2f(50, 50), Vector2f(0, 0), Vector2f(1, 1), Vector3f(0, 0, 1));
 	Object ground = Shape_renderer::Create_plane(Vector3f(), Vector2f(50, 50), Vector3f(0, 1, 0));
 	ground.Rotate(Vector3f(-90.0f, 0.0f, 0.0f));
+	Object cube = Shape_renderer::Create_box(Vector3f(0, 0, -10), Vector3f(5, 5, 5), Vector3f(1, 0, 0));
+	Object depth_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), fbo_texture);
 	
 	// Camera
-	Camera camera;
-	camera.Move(Vector3f(0.0f, 20.0f, 60.0f));
-	camera.Rotate(Vector3f(-30.0f, 0.0f, 0.0f));
+	//Camera camera = Camera::CreatePerspective();
+	Camera camera = Camera::CreateOrthographic();
+	camera.Move(Vector3f(0.0f, 0.0f, 0.0f));
+	camera.Rotate(Vector3f(0.0f, 0.0f, 0.0f));
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -120,10 +143,16 @@ int main()
 			camera.Rotate(prev_rot - rotation);
 			prev_rot = rotation;
 
+			//glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			// Draw
-			Terrain_renderer::Draw(&snow, 1, camera, color_map, height_map);
-			Shape_renderer::Draw(&ground, 1, camera);
+			//Terrain_renderer::Draw(&snow, 1, camera, color_map, height_map);
+			//Shape_renderer::Draw(&ground, 1, camera);
+			Shape_renderer::Draw(&cube, 1, camera);
+
+			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			//Shape_renderer::Draw(&depth_display, 1, Camera());
 		}
 
 		glfwSwapBuffers(window);
