@@ -123,7 +123,7 @@ int main()
 	
 	// Camera
 	//Camera camera = Camera::CreatePerspective();
-	Camera camera = Camera::CreateOrthographic();
+	Camera camera = Camera::CreateOrthographic(10, 0, 5, -5, 5, -5);
 	camera.Move(Vector3f(0.0f, 0.0f, 5.0f));
 	camera.Rotate(Vector3f(0.0f, 0.0f, 0.0f));
 

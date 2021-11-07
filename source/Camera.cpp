@@ -31,26 +31,18 @@ Matrix4f Camera::Get_view()
 	return Matrix4f::createRotationAroundAxis(rot_x, 0, 0) * view;
 }
 
-Camera Camera::CreatePerspective()
+Camera Camera::CreatePerspective(float far, float near)
 {
 	Camera camera;
-	float far = 100.0f;
-	float near = 0.1f;
 	camera.projection[10] = -(far/(far-near));
 	camera.projection[11] = -1;
 	camera.projection[14] = -((far*near)/(far-near));
 	return camera;
 }
 
-Camera Camera::CreateOrthographic()
+Camera Camera::CreateOrthographic(float far, float near, float right, float left, float top, float bot)
 {
 	Camera camera;
-	float far = 10.0f;
-	float near = 0.0f;
-	float left = -5.0f;
-	float right = 5.0f;
-	float top = 5.0f;
-	float bot = -5.0f;
 	camera.projection[0] = 2 / (right-left);
 	camera.projection[5] = 2 / (top-bot);
 	camera.projection[10] = -2 / (far-near);
