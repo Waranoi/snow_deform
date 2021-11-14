@@ -87,6 +87,7 @@ int main()
 		printf("ERROR::FRAMEBUFFER:: Framebuffer is not complete! %d\n", fb_res);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
 	// Textures
 	int color_w, color_h, color_chan;
 	unsigned char *color_data = stbi_load("../resources/textures/snow.jpg", &color_w, &color_h, &color_chan, 0);
@@ -98,20 +99,33 @@ int main()
 	glGenerateMipmap(GL_TEXTURE_2D);
 	stbi_image_free(color_data);
 
-	int height_w = 256;
-	int height_h = 256;
-	int height_tot = height_w * height_h;
-	float height_data[height_tot];
-	for (int i = 0; i < height_tot; i++)
+	int height_w = window_w;
+	int height_h = window_h;
+	int height_tot = height_w * height_h * 3;
+	unsigned char height_data[height_tot];
+	for (int i = 0; i < height_tot; i += 3)
 	{
-		height_data[i] = 10;
+		height_data[i+0] = 255;
+		height_data[i+1] = 0;
+		height_data[i+2] = 0;
 	}
 
-	unsigned int height_map;
-	glGenTextures(1, &height_map);
-	glBindTexture(GL_TEXTURE_2D, height_map);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, height_w, height_h, 0, GL_RED, GL_FLOAT, height_data);
-	glGenerateMipmap(GL_TEXTURE_2D);
+	int height_id = 0;
+	unsigned int height_map[2];
+	glGenTextures(2, height_map);
+	for (int i = 0; i < 2; i++)
+	{
+		glBindTexture(GL_TEXTURE_2D, height_map[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, height_w, height_h, 0, GL_RGB, GL_UNSIGNED_BYTE, height_data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+
+	unsigned int height_fbo;
+	glGenFramebuffers(1, &height_fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, height_fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, height_map[0], 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Environmental objects
 	Object snow = Terrain_renderer::Create_patch(Vector2f(-50, -50), Vector2f(50, 50), Vector2f(0, 0), Vector2f(1, 1), Vector3f(0, 0, 1));
@@ -123,20 +137,23 @@ int main()
 	{
 		Shape_renderer::Create_box(Vector3f(20, 12, 25), Vector3f(10, 10, 10), Vector3f(1, 0, 0)),
 		Shape_renderer::Create_box(Vector3f(-20, 10, 10), Vector3f(7, 7, 7), Vector3f(0, 1, 0)),
-		Shape_renderer::Create_box(Vector3f(-5, 15, -25), Vector3f(15, 15, 15), Vector3f(0, 0, 1))
+		Shape_renderer::Create_box(Vector3f(-5, 15, -25), Vector3f(14, 14, 14), Vector3f(0, 0, 1))
 	};
 	
 	// Miscellaneous objects
-	Object depth_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), fbo_texture);
+	Object height_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0));
+	Object depth_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), height_map[0]);
 	
 	// Cameras
 	Camera camera = Camera::CreatePerspective();
-	camera.Move(Vector3f(0.0f, 5.0f, 75.0f));
+	camera.Move(Vector3f(0.0f, 50.0f, 75.0f));
+	camera.Rotate(Vector3f(-30.0f, 0.0f, 0.0f));
 
 	Camera fbo_camera = Camera::CreateOrthographic(10, 0, 50, -50, 50, -50);
-	fbo_camera.Move(Vector3f(0.0f, -0.1f, 0.0f));
+	fbo_camera.Move(Vector3f(0.0f, 0.0f, 0.0f));
 	fbo_camera.Rotate(Vector3f(90.0f, 0.0f, 0.0f));
 
+	Camera height_camera = Camera::CreateOrthographic();
 	Camera depth_camera = Camera::CreateOrthographic();
 
 	while (!glfwWindowShouldClose(window))
@@ -146,7 +163,8 @@ int main()
         // Game loop
         {
         	// Directional movement
-			camera.Move(movement * 1.0f);
+			//camera.Move(movement * 1.0f);
+			cubes[2].Move(movement * 1.0f);
 			if (movement.y > 0.0f)
 				movement.y = std::max(movement.y - 1.0f, 0.0f);
 			else if (movement.y < 0.0f)
@@ -161,10 +179,19 @@ int main()
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			Shape_renderer::Draw(cubes, 3, fbo_camera);
 
+			// Render snow height map
+			int height_target = height_id;
+			height_id = (height_id + 1) % 2;
+			int height_source = height_id;
+			glBindFramebuffer(GL_FRAMEBUFFER, height_fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, height_map[height_target], 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			Shape_renderer::Draw_snow_deform(&height_display, 1, height_camera, height_map[height_source], fbo_texture);
+
 			// Draw
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			Terrain_renderer::Draw(&snow, 1, camera, color_map, height_map);
+			Terrain_renderer::Draw(&snow, 1, camera, color_map, height_map[height_target]);
 			Shape_renderer::Draw(&ground, 1, camera);
 			Shape_renderer::Draw(cubes, 3, camera);
 

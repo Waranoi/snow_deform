@@ -22,13 +22,16 @@ Shader::Shader(const char* path_vs, const char* path_fs, const char* path_tc, co
 	glAttachShader(program, vs);
 
 	// Setup fragment shader
-    std::string fs_str = Load_shader(path_fs);
-    const char* fs_char = fs_str.c_str();
-	fs = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fs, 1, &fs_char, NULL);
-	glCompileShader(fs);
-	Shader_error_log("[FRAGMENT SHADER COMPILE ERROR]:", fs);
-	glAttachShader(program, fs);
+	if (path_fs)
+	{
+	    std::string fs_str = Load_shader(path_fs);
+	    const char* fs_char = fs_str.c_str();
+		fs = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(fs, 1, &fs_char, NULL);
+		glCompileShader(fs);
+		Shader_error_log("[FRAGMENT SHADER COMPILE ERROR]:", fs);
+		glAttachShader(program, fs);
+	}
 
 	// Setup tessellation control shader
 	if (path_tc)

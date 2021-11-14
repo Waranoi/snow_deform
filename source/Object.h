@@ -3,6 +3,7 @@
 
 struct Object
 {
+	void Move(Vector3f move);
 	void Rotate(Vector3f rotate);
 
 	void Bind_array();

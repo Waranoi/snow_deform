@@ -1,0 +1,19 @@
+#version 450 core
+out vec4 frag_color;
+
+in vec3 norm;
+in vec2 tex_coord;
+
+uniform vec3 object_col;
+layout (binding = 0) uniform sampler2D snow_map;
+layout (binding = 1) uniform sampler2D deform_map;
+
+void main()
+{
+    float snow_height = texture(snow_map, tex_coord).r;
+    float deform_height = texture(deform_map, tex_coord).r;
+
+    if (deform_height < snow_height)
+        snow_height = deform_height;
+    frag_color = vec4(snow_height, 0, 0, 1);
+}

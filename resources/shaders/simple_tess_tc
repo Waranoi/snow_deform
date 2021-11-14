@@ -17,10 +17,10 @@ void main()
     es_pos[gl_InvocationID] = cs_pos[gl_InvocationID];
     es_tex_coord[gl_InvocationID] = cs_tex_coord[gl_InvocationID];
 
-    gl_TessLevelOuter[0] = 4;
-    gl_TessLevelOuter[1] = 4;
-    gl_TessLevelOuter[2] = 4;
-    gl_TessLevelOuter[3] = 4;
-    gl_TessLevelInner[0] = 4;
-    gl_TessLevelInner[1] = 4;
+    gl_TessLevelOuter[0] = 64;
+    gl_TessLevelOuter[1] = 64;
+    gl_TessLevelOuter[2] = 64;
+    gl_TessLevelOuter[3] = 64;
+    gl_TessLevelInner[0] = 64;
+    gl_TessLevelInner[1] = 64;
 }

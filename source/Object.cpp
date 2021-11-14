@@ -2,6 +2,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+void Object::Move(Vector3f move)
+{
+	model = Matrix4f::createTranslation(move.x, move.y, move.z) * model;
+}
+
 void Object::Rotate(Vector3f rotate)
 {
 	model = Matrix4f::createRotationAroundAxis(rotate.x, rotate.y, rotate.z) * model;
