@@ -9,8 +9,8 @@
 #include <thread>
 #include <algorithm>
 #include "vmath.h"
-#include "Shape_renderer.h"
-#include "Terrain_renderer.h"
+#include "Object.h"
+#include "Renderer.h"
 #include "Camera.h"
 
 unsigned int window_w = 800;
@@ -62,8 +62,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // Init renderers
-    Terrain_renderer::Init();
-	Shape_renderer::Init();
+    Renderer::Init();
 	
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -126,26 +125,26 @@ int main()
 	// Environmental objects
 	Object snow[] =
 	{
-		Terrain_renderer::Create_patch(Vector2f(-50, -50), Vector2f(0, 0), Vector2f(0, 0), Vector2f(0.5f, 0.5f), Vector3f(0, 0, 1)),
-		Terrain_renderer::Create_patch(Vector2f(0, -50), Vector2f(50, 0), Vector2f(0.5f, 0), Vector2f(1, 0.5f), Vector3f(0, 0, 1)),
-		Terrain_renderer::Create_patch(Vector2f(0, 0), Vector2f(50, 50), Vector2f(0.5f, 0.5f), Vector2f(1, 1), Vector3f(0, 0, 1)),
-		Terrain_renderer::Create_patch(Vector2f(-50, 0), Vector2f(0, 50), Vector2f(0, 0.5f), Vector2f(0.5f, 1), Vector3f(0, 0, 1))
+		Create_object::Patch(Vector2f(-50, -50), Vector2f(0, 0), Vector2f(0, 0), Vector2f(0.5f, 0.5f), Vector3f(0, 0, 1)),
+		Create_object::Patch(Vector2f(0, -50), Vector2f(50, 0), Vector2f(0.5f, 0), Vector2f(1, 0.5f), Vector3f(0, 0, 1)),
+		Create_object::Patch(Vector2f(0, 0), Vector2f(50, 50), Vector2f(0.5f, 0.5f), Vector2f(1, 1), Vector3f(0, 0, 1)),
+		Create_object::Patch(Vector2f(-50, 0), Vector2f(0, 50), Vector2f(0, 0.5f), Vector2f(0.5f, 1), Vector3f(0, 0, 1))
 	};
 
-	Object ground = Shape_renderer::Create_plane(Vector3f(), Vector2f(50, 50), Vector3f(0.30f, 0.16f, 0.16f));
+	Object ground = Create_object::Plane(Vector3f(), Vector2f(50, 50), Vector3f(0.30f, 0.16f, 0.16f));
 	ground.Rotate(Vector3f(90.0f, 0.0f, 0.0f));
 
 	// Snow deforming objects
 	Object cubes[] = 
 	{
-		Shape_renderer::Create_box(Vector3f(20, 12, 25), Vector3f(10, 10, 10), Vector3f(1, 0, 0)),
-		Shape_renderer::Create_box(Vector3f(-20, 10, 10), Vector3f(7, 7, 7), Vector3f(0, 1, 0)),
-		Shape_renderer::Create_box(Vector3f(-5, 15, -25), Vector3f(14, 14, 14), Vector3f(0, 0, 1))
+		Create_object::Box(Vector3f(20, 12, 25), Vector3f(10, 10, 10), Vector3f(1, 0, 0)),
+		Create_object::Box(Vector3f(-20, 10, 10), Vector3f(7, 7, 7), Vector3f(0, 1, 0)),
+		Create_object::Box(Vector3f(-5, 15, -25), Vector3f(14, 14, 14), Vector3f(0, 0, 1))
 	};
 	
 	// Miscellaneous objects
-	Object height_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0));
-	Object depth_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), fbo_texture);
+	Object height_display = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0));
+	Object depth_display = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), fbo_texture);
 	
 	// Cameras
 	Camera camera = Camera::CreatePerspective();
@@ -180,7 +179,7 @@ int main()
 			// Render fbo
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			Shape_renderer::Draw(cubes, 3, fbo_camera);
+			Renderer::Draw_simple(cubes, 3, fbo_camera);
 
 			// Render snow height map
 			int height_target = height_id;
@@ -189,16 +188,16 @@ int main()
 			glBindFramebuffer(GL_FRAMEBUFFER, height_fbo);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, height_map[height_target], 0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			Shape_renderer::Draw_snow_deform(&height_display, 1, height_camera, height_map[height_source], fbo_texture);
+			Renderer::Draw_snow(&height_display, 1, height_camera, height_map[height_source], fbo_texture);
 
 			// Draw
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			Terrain_renderer::Draw(snow, 4, camera, color_map, height_map[height_target]);
-			Shape_renderer::Draw(&ground, 1, camera);
-			Shape_renderer::Draw(cubes, 3, camera);
+			Renderer::Draw_terrain(snow, 4, camera, color_map, height_map[height_target]);
+			Renderer::Draw_simple(&ground, 1, camera);
+			Renderer::Draw_simple(cubes, 3, camera);
 
-			//Shape_renderer::Draw(&depth_display, 1, depth_camera);
+			//Renderer::Draw_simple(&depth_display, 1, depth_camera);
 		}
 
 		glfwSwapBuffers(window);
