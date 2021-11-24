@@ -12,7 +12,7 @@ uniform mat4 model;
 
 void main()
 {
-   gl_Position = proj * view * model * vec4(a_pos, 1.0);
-   norm = a_norm;
-   tex_coord = a_tex_coord;
+    gl_Position = proj * view * model * vec4(a_pos, 1.0);
+    norm = a_norm;
+    tex_coord = a_tex_coord;
 }

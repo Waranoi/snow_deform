@@ -11,7 +11,7 @@ uniform mat4 model;
 
 void main()
 {
-   gl_Position = proj * view * model * vec4(a_pos, 1.0);
-   norm = mat3(transpose(inverse(model))) * a_norm;
-   frag_pos = vec3(model * vec4(a_pos, 1.0));
+    gl_Position = proj * view * model * vec4(a_pos, 1.0);
+    norm = mat3(transpose(inverse(model))) * a_norm;
+    frag_pos = vec3(model * vec4(a_pos, 1.0));
 }
