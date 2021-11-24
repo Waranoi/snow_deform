@@ -87,7 +87,6 @@ int main()
 		printf("ERROR::FRAMEBUFFER:: Framebuffer is not complete! %d\n", fb_res);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-
 	// Textures
 	int color_w, color_h, color_chan;
 	unsigned char *color_data = stbi_load("../resources/textures/snow.jpg", &color_w, &color_h, &color_chan, 0);
@@ -123,12 +122,16 @@ int main()
 
 	unsigned int height_fbo;
 	glGenFramebuffers(1, &height_fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, height_fbo);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, height_map[0], 0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Environmental objects
-	Object snow = Terrain_renderer::Create_patch(Vector2f(-50, -50), Vector2f(50, 50), Vector2f(0, 0), Vector2f(1, 1), Vector3f(0, 0, 1));
+	Object snow[] =
+	{
+		Terrain_renderer::Create_patch(Vector2f(-50, -50), Vector2f(0, 0), Vector2f(0, 0), Vector2f(0.5f, 0.5f), Vector3f(0, 0, 1)),
+		Terrain_renderer::Create_patch(Vector2f(0, -50), Vector2f(50, 0), Vector2f(0.5f, 0), Vector2f(1, 0.5f), Vector3f(0, 0, 1)),
+		Terrain_renderer::Create_patch(Vector2f(0, 0), Vector2f(50, 50), Vector2f(0.5f, 0.5f), Vector2f(1, 1), Vector3f(0, 0, 1)),
+		Terrain_renderer::Create_patch(Vector2f(-50, 0), Vector2f(0, 50), Vector2f(0, 0.5f), Vector2f(0.5f, 1), Vector3f(0, 0, 1))
+	};
+
 	Object ground = Shape_renderer::Create_plane(Vector3f(), Vector2f(50, 50), Vector3f(0.30f, 0.16f, 0.16f));
 	ground.Rotate(Vector3f(90.0f, 0.0f, 0.0f));
 
@@ -142,7 +145,7 @@ int main()
 	
 	// Miscellaneous objects
 	Object height_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0));
-	Object depth_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), height_map[0]);
+	Object depth_display = Shape_renderer::Create_plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), fbo_texture);
 	
 	// Cameras
 	Camera camera = Camera::CreatePerspective();
@@ -191,7 +194,7 @@ int main()
 			// Draw
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			Terrain_renderer::Draw(&snow, 1, camera, color_map, height_map[height_target]);
+			Terrain_renderer::Draw(snow, 4, camera, color_map, height_map[height_target]);
 			Shape_renderer::Draw(&ground, 1, camera);
 			Shape_renderer::Draw(cubes, 3, camera);
 
