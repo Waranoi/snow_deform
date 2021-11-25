@@ -16,11 +16,14 @@
 unsigned int window_w = 800;
 unsigned int window_h = 800;
 GLFWwindow* window;
+
 Vector3f movement;
 bool rotate = false;
 Vector3f rotation;
 Vector3f prev_rot;
+
 bool render_depth = false;
+unsigned int polygon_mode = GL_FILL;
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
@@ -191,13 +194,16 @@ int main()
             Renderer::Draw_snow(&height_display, 1, height_camera, height_map[height_source], fbo_texture);
 
             // Draw
+            glPolygonMode( GL_FRONT_AND_BACK, polygon_mode );
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             Renderer::Draw_terrain(snow, 4, camera, color_map, height_map[height_target]);
             Renderer::Draw_simple(&ground, 1, camera);
             Renderer::Draw_simple(cubes, 3, camera);
+            glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-            //Renderer::Draw_simple(&depth_display, 1, depth_camera);
+            if (render_depth)
+                Renderer::Draw_simple(&depth_display, 1, depth_camera);
         }
 
         glfwSwapBuffers(window);
@@ -253,8 +259,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     movement.x = right + left;
     movement.z = forward + backward;
 
-    if(key == GLFW_KEY_R && action == GLFW_PRESS)
+    if (key == GLFW_KEY_R && action == GLFW_PRESS)
         render_depth = !render_depth;
+
+    if (key == GLFW_KEY_T && action == GLFW_PRESS)
+    {
+        if (polygon_mode == GL_FILL)
+            polygon_mode = GL_LINE;
+        else
+            polygon_mode = GL_FILL;
+    }
 
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
