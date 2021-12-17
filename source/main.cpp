@@ -22,7 +22,7 @@ bool rotate = false;
 Vector3f rotation;
 Vector3f prev_rot;
 
-bool render_depth = false;
+int render_depth = 0;
 unsigned int polygon_mode = GL_FILL;
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -71,7 +71,7 @@ int main()
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
-    // Framebuffer objects
+    // Depth texture and framebuffer
     unsigned int fbo_texture;
     glGenTextures(1, &fbo_texture);
     glBindTexture(GL_TEXTURE_2D, fbo_texture);
@@ -89,7 +89,7 @@ int main()
         printf("ERROR::FRAMEBUFFER:: Framebuffer is not complete! %d\n", fb_res);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // Textures
+    // Color map
     int color_w, color_h, color_chan;
     unsigned char *color_data = stbi_load("../resources/textures/snow.jpg", &color_w, &color_h, &color_chan, 0);
 
@@ -100,6 +100,7 @@ int main()
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(color_data);
 
+    // Height maps and framebuffer
     int height_w = window_w;
     int height_h = window_h;
     int height_tot = height_w * height_h * 3;
@@ -125,6 +126,19 @@ int main()
     unsigned int height_fbo;
     glGenFramebuffers(1, &height_fbo);
 
+    // Depress snow texture and framebuffer. Can I not just use the height_fbo for this? Should I make a general use fbo instead? Can I not just use the default fbo instead?
+    unsigned int depress_texture;
+    glGenTextures(1, &depress_texture);
+    glBindTexture(GL_TEXTURE_2D, depress_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_w, window_h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    unsigned int depress_fbo;
+    glGenFramebuffers(1, &depress_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, depress_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, depress_texture, 0);
+
     // Environmental objects
     Object snow[] =
     {
@@ -146,8 +160,9 @@ int main()
     };
     
     // Miscellaneous objects
-    Object height_display = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0));
+    Object simple_square = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0));
     Object depth_display = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), fbo_texture);
+    Object depress_display = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), depress_texture);
     
     // Cameras
     Camera camera = Camera::CreatePerspective();
@@ -159,6 +174,7 @@ int main()
     fbo_camera.Rotate(Vector3f(90.0f, 0.0f, 0.0f));
 
     Camera height_camera = Camera::CreateOrthographic();
+    Camera ortho_camera = Camera::CreateOrthographic();
     Camera depth_camera = Camera::CreateOrthographic();
 
     while (!glfwWindowShouldClose(window))
@@ -191,19 +207,28 @@ int main()
             glBindFramebuffer(GL_FRAMEBUFFER, height_fbo);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, height_map[height_target], 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            Renderer::Draw_snow(&height_display, 1, height_camera, height_map[height_source], fbo_texture);
+            Renderer::Draw_snow(&simple_square, 1, height_camera, height_map[height_source], fbo_texture);
+
+            // Depress snow
+            glBindFramebuffer(GL_FRAMEBUFFER, depress_fbo);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            Renderer::Draw_snow_depression(simple_square, ortho_camera, height_map[height_target], window_w, window_h);
+
+            // Blur snow
 
             // Draw
             glPolygonMode( GL_FRONT_AND_BACK, polygon_mode );
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            Renderer::Draw_terrain(snow, 4, camera, color_map, height_map[height_target]);
+            Renderer::Draw_terrain(snow, 4, camera, color_map, depress_texture);
             Renderer::Draw_simple(&ground, 1, camera);
             Renderer::Draw_simple(cubes, 3, camera);
             glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-            if (render_depth)
+            if (render_depth == 1)
                 Renderer::Draw_simple(&depth_display, 1, depth_camera);
+            else if (render_depth == 2)
+                Renderer::Draw_simple(&depress_display, 1, depth_camera);
         }
 
         glfwSwapBuffers(window);
@@ -260,7 +285,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     movement.z = forward + backward;
 
     if (key == GLFW_KEY_R && action == GLFW_PRESS)
-        render_depth = !render_depth;
+    {
+        if (++render_depth > 2)
+            render_depth = 0;
+    }
 
     if (key == GLFW_KEY_T && action == GLFW_PRESS)
     {

@@ -1,0 +1,31 @@
+#version 450 core
+out vec4 frag_color;
+
+in vec3 norm;
+in vec2 tex_coord;
+
+uniform vec3 object_col;
+uniform int width;
+uniform int height;
+layout (binding = 0) uniform sampler2D snow_deform_map;
+
+vec4 snow_depress(ivec2 itex_coord)
+{
+    const int half_dim = 20;
+    for (int x = -half_dim; x <= half_dim; x++)
+    {
+        for (int y = -half_dim; y <= half_dim; y++)
+        {
+            ivec2 itex_sample = itex_coord + ivec2(x, y);
+            if (itex_sample.x >= 0 && itex_sample.x < width && itex_sample.y >= 0 && itex_sample.y < height && texelFetch(snow_deform_map, itex_sample, 0).r < 1.0)
+                return texelFetch(snow_deform_map, itex_coord, 0);
+        }
+    }
+    return vec4(0.8, 0, 0, 1);
+}
+
+void main()
+{
+    ivec2 itex_coord = ivec2(tex_coord.x * width, tex_coord.y * height);
+    frag_color = snow_depress(itex_coord);
+}

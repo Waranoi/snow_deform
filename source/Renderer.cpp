@@ -5,12 +5,14 @@
 
 static Shader mvp_shader;
 static Shader snow_shader;
+static Shader depress_snow_shader;
 static Shader terrain_shader;
 
 void Renderer::Init()
 {
     mvp_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/simple_mvp_fs", nullptr, nullptr);
     snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_deform_fs", nullptr, nullptr);
+    depress_snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_depress_fs", nullptr, nullptr);
     terrain_shader = Shader("../resources/shaders/simple_tess_vs", "../resources/shaders/simple_tess_fs", "../resources/shaders/simple_tess_tc", "../resources/shaders/simple_tess_te");
 }
 
@@ -96,6 +98,45 @@ void Renderer::Draw_snow(Object *objects, int count, Camera camera, unsigned int
         glUniform3fv(glGetUniformLocation(program, "object_col"), 1, Vector3f(1, 1, 1));
         glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
     }
+}
+
+void Renderer::Draw_snow_depression(Object &object, Camera camera, unsigned int snow_deform_map, int snow_deform_width, int snow_deform_height)
+{
+    unsigned int program = depress_snow_shader.Get_program();
+    glUseProgram(program);
+    glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
+    glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
+    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
+    glUniform3f(glGetUniformLocation(program, "light_pos"), 0.0f, 30.0f, 0.0f);
+    glUniform3f(glGetUniformLocation(program, "light_col"), 1.0f, 1.0f, 1.0f);
+    glUniform3fv(glGetUniformLocation(program, "view_pos"), 1, camera.Get_view().getTranslation());
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, snow_deform_map);
+
+    glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object.ebo);
+
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, nullptr);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
+
+    glUniform3fv(glGetUniformLocation(program, "object_col"), 1, object.color);
+    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
+    glUniform1i(glGetUniformLocation(program, "width"), snow_deform_width);
+    glUniform1i(glGetUniformLocation(program, "height"), snow_deform_height);
+
+    glDrawElements(GL_TRIANGLES, object.points, GL_UNSIGNED_INT, nullptr);
+
+    glUniform3fv(glGetUniformLocation(program, "object_col"), 1, Vector3f(1, 1, 1));
+    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
+    
 }
 
 void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned int color_map, unsigned int height_map, float radius)
