@@ -6,6 +6,7 @@
 static Shader mvp_shader;
 static Shader snow_shader;
 static Shader depress_snow_shader;
+static Shader gaussian_blur_shader;
 static Shader terrain_shader;
 
 void Renderer::Init()
@@ -13,6 +14,7 @@ void Renderer::Init()
     mvp_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/simple_mvp_fs", nullptr, nullptr);
     snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_deform_fs", nullptr, nullptr);
     depress_snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_depress_fs", nullptr, nullptr);
+    gaussian_blur_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/gaussian_blur_fs", nullptr, nullptr);
     terrain_shader = Shader("../resources/shaders/simple_tess_vs", "../resources/shaders/simple_tess_fs", "../resources/shaders/simple_tess_tc", "../resources/shaders/simple_tess_te");
 }
 
@@ -131,6 +133,46 @@ void Renderer::Draw_snow_depression(Object &object, Camera camera, unsigned int 
     glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
     glUniform1i(glGetUniformLocation(program, "width"), snow_deform_width);
     glUniform1i(glGetUniformLocation(program, "height"), snow_deform_height);
+
+    glDrawElements(GL_TRIANGLES, object.points, GL_UNSIGNED_INT, nullptr);
+
+    glUniform3fv(glGetUniformLocation(program, "object_col"), 1, Vector3f(1, 1, 1));
+    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
+    
+}
+
+void Renderer::Draw_gaussian_blur(Object &object, Camera camera, unsigned int source_texture, Vector2i direction, int width, int height)
+{
+    unsigned int program = gaussian_blur_shader.Get_program();
+    glUseProgram(program);
+    glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
+    glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
+    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
+    glUniform3f(glGetUniformLocation(program, "light_pos"), 0.0f, 30.0f, 0.0f);
+    glUniform3f(glGetUniformLocation(program, "light_col"), 1.0f, 1.0f, 1.0f);
+    glUniform3fv(glGetUniformLocation(program, "view_pos"), 1, camera.Get_view().getTranslation());
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, source_texture);
+
+    glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object.ebo);
+
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, nullptr);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
+
+    glUniform3fv(glGetUniformLocation(program, "object_col"), 1, object.color);
+    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
+    glUniform2iv(glGetUniformLocation(program, "dir"), 1, direction);
+    glUniform1i(glGetUniformLocation(program, "width"), width);
+    glUniform1i(glGetUniformLocation(program, "height"), height);
 
     glDrawElements(GL_TRIANGLES, object.points, GL_UNSIGNED_INT, nullptr);
 

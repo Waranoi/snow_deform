@@ -139,6 +139,20 @@ int main()
     glBindFramebuffer(GL_FRAMEBUFFER, depress_fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, depress_texture, 0);
 
+    // Blur textures and framebuffer
+    unsigned int blur_texture[2];
+    glGenTextures(2, blur_texture);
+    for (int i = 0; i < 2; i++)
+    {
+        glBindTexture(GL_TEXTURE_2D, blur_texture[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, height_w, height_h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
+    unsigned int blur_fbo;
+    glGenFramebuffers(1, &blur_fbo);
+
     // Environmental objects
     Object snow[] =
     {
@@ -163,6 +177,7 @@ int main()
     Object simple_square = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0));
     Object depth_display = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), fbo_texture);
     Object depress_display = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), depress_texture);
+    Object blur_display[2] = { Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), blur_texture[0]), Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0), blur_texture[1]) };
     
     // Cameras
     Camera camera = Camera::CreatePerspective();
@@ -215,12 +230,24 @@ int main()
             Renderer::Draw_snow_depression(simple_square, ortho_camera, height_map[height_target], window_w, window_h);
 
             // Blur snow
+            glBindFramebuffer(GL_FRAMEBUFFER, blur_fbo);
+
+            // Horizontal blur
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blur_texture[0], 0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            Renderer::Draw_gaussian_blur(simple_square, ortho_camera, depress_texture, Vector2i(1, 0), window_w, window_h);
+
+            // Final blur
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blur_texture[1], 0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            Renderer::Draw_gaussian_blur(simple_square, ortho_camera, blur_texture[0], Vector2i(0, 1), window_w, window_h);
+            unsigned int final_snow_map = blur_texture[1];
 
             // Draw
             glPolygonMode( GL_FRONT_AND_BACK, polygon_mode );
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            Renderer::Draw_terrain(snow, 4, camera, color_map, depress_texture);
+            Renderer::Draw_terrain(snow, 4, camera, color_map, final_snow_map);
             Renderer::Draw_simple(&ground, 1, camera);
             Renderer::Draw_simple(cubes, 3, camera);
             glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
@@ -229,6 +256,10 @@ int main()
                 Renderer::Draw_simple(&depth_display, 1, depth_camera);
             else if (render_depth == 2)
                 Renderer::Draw_simple(&depress_display, 1, depth_camera);
+            else if (render_depth == 3)
+                Renderer::Draw_simple(&blur_display[0], 1, depth_camera);
+            else if (render_depth == 4)
+                Renderer::Draw_simple(&blur_display[1], 1, depth_camera);
         }
 
         glfwSwapBuffers(window);
@@ -286,7 +317,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     if (key == GLFW_KEY_R && action == GLFW_PRESS)
     {
-        if (++render_depth > 2)
+        if (++render_depth > 4)
             render_depth = 0;
     }
 

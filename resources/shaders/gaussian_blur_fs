@@ -1,0 +1,53 @@
+#version 450 core
+out vec4 frag_color;
+
+in vec3 norm;
+in vec2 tex_coord;
+
+uniform vec3 object_col;
+uniform ivec2 dir;
+uniform int width;
+uniform int height;
+layout (binding = 0) uniform sampler2D source_texture;
+
+const float PI = 3.14159265;
+const float E = 2.7182818;
+
+float gaussian_function_step_1D(float sigma, int step)
+{
+    return 1 / sqrt(2*PI*sigma) * pow(E, -pow(step, 2)/(2*pow(sigma, 2)));
+}
+
+void main()
+{
+    ivec2 itex_coord = ivec2(tex_coord.x * width, tex_coord.y * height);
+
+    const float sigma = 10;
+    const int tot_steps = 18;
+    const int mid_step = tot_steps / 2;
+
+    float blur_weights[tot_steps];
+    float blur_tot = 0;
+
+    // Get weights
+    for (int i = 0; i < tot_steps; i++)
+    {
+        blur_weights[i] = gaussian_function_step_1D(sigma, i - mid_step);
+        blur_tot += blur_weights[i];
+    }
+
+    // Normalize weights
+    for (int i = 0; i < tot_steps; i++)
+    {
+        blur_weights[i] /= blur_tot;
+    }
+
+    // Apply weights
+    vec4 res = vec4(0);
+    for (int i = 0; i < tot_steps; i++)
+    {
+        res += texelFetch(source_texture, itex_coord + dir * (i - mid_step), 0) * blur_weights[i];
+    }
+
+    frag_color = vec4(res.rgb, 1.0);
+}
