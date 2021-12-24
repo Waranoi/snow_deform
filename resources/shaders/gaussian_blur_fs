@@ -13,6 +13,13 @@ layout (binding = 0) uniform sampler2D source_texture;
 const float PI = 3.14159265;
 const float E = 2.7182818;
 
+vec4 texel_height(ivec2 texel)
+{
+    texel.x = clamp(texel.x, 0, width - 1);
+    texel.y = clamp(texel.y, 0, height - 1);
+    return texelFetch(source_texture, texel, 0);
+}
+
 float gaussian_function_step_1D(float sigma, int step)
 {
     return 1 / sqrt(2*PI*sigma) * pow(E, -pow(step, 2)/(2*pow(sigma, 2)));
@@ -46,7 +53,7 @@ void main()
     vec4 res = vec4(0);
     for (int i = 0; i < tot_steps; i++)
     {
-        res += texelFetch(source_texture, itex_coord + dir * (i - mid_step), 0) * blur_weights[i];
+        res += texel_height(itex_coord + dir * (i - mid_step)) * blur_weights[i];
     }
 
     frag_color = vec4(res.rgb, 1.0);

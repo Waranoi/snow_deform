@@ -7,7 +7,7 @@ Shader::Shader()
     
 }
 
-Shader::Shader(const char* path_vs, const char* path_fs, const char* path_tc, const char* path_te)
+Shader::Shader(const char* path_vs, const char* path_fs, const char* path_tc, const char* path_te, const char* path_gs)
 {
     // Create a program object
     program = glCreateProgram();
@@ -55,6 +55,18 @@ Shader::Shader(const char* path_vs, const char* path_fs, const char* path_tc, co
         glCompileShader(te);
         Shader_error_log("[TESSELATION EVALUATION SHADER COMPILE ERROR]:", te);
         glAttachShader(program, te);
+    }
+
+    // Setup geometry shader
+    if (path_gs)
+    {
+        std::string gs_str = Load_shader(path_gs);
+        const char* gs_char = gs_str.c_str();
+        gs = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(gs, 1, &gs_char, NULL);
+        glCompileShader(gs);
+        Shader_error_log("[GEOMETRY SHADER COMPILE ERROR]:", gs);
+        glAttachShader(program, gs);
     }
 
     // Link program object

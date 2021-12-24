@@ -7,7 +7,7 @@ class Shader
 {
 public:
     Shader();
-    Shader(const char* path_vs, const char* path_fs, const char* path_tc, const char* path_te);
+    Shader(const char* path_vs, const char* path_fs, const char* path_tc = nullptr, const char* path_te = nullptr, const char* path_gs = nullptr);
     unsigned int Get_program();
 
 private:
@@ -16,6 +16,6 @@ private:
     void Program_error_log(const char* msg, GLuint program);
 
 private:
-    unsigned int vs, fs, tc, te, program;
+    unsigned int vs, fs, tc, te, gs, program;
 
 };

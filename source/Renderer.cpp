@@ -8,14 +8,16 @@ static Shader snow_shader;
 static Shader depress_snow_shader;
 static Shader gaussian_blur_shader;
 static Shader terrain_shader;
+static Shader terrain_shader_debug;
 
 void Renderer::Init()
 {
-    mvp_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/simple_mvp_fs", nullptr, nullptr);
-    snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_deform_fs", nullptr, nullptr);
-    depress_snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_depress_fs", nullptr, nullptr);
-    gaussian_blur_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/gaussian_blur_fs", nullptr, nullptr);
+    mvp_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/simple_mvp_fs");
+    snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_deform_fs");
+    depress_snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_depress_fs");
+    gaussian_blur_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/gaussian_blur_fs");
     terrain_shader = Shader("../resources/shaders/simple_tess_vs", "../resources/shaders/simple_tess_fs", "../resources/shaders/simple_tess_tc", "../resources/shaders/simple_tess_te");
+    terrain_shader_debug = Shader("../resources/shaders/simple_tess_vs", "../resources/shaders/simple_tess_fs", "../resources/shaders/simple_tess_tc", "../resources/shaders/simple_tess_te", "../resources/shaders/debug_normals_gs");
 }
 
 void Renderer::Draw_simple(Object *objects, int count, Camera camera)
@@ -181,9 +183,14 @@ void Renderer::Draw_gaussian_blur(Object &object, Camera camera, unsigned int so
     
 }
 
-void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned int color_map, unsigned int height_map, float radius)
+void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned int color_map, unsigned int height_map, int width, int height, float radius, bool debug)
 {
-    unsigned int program = terrain_shader.Get_program();
+    unsigned int program;
+    if (debug)
+        program = terrain_shader_debug.Get_program();
+    else
+        program = terrain_shader.Get_program();
+    
     glUseProgram(program);
     glUniform1f(glGetUniformLocation(program, "radius"), radius);
     glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
@@ -216,6 +223,8 @@ void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned 
 
         glUniform3fv(glGetUniformLocation(program, "object_col"), 1, object.color);
         glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
+        glUniform1i(glGetUniformLocation(program, "width"), width);
+        glUniform1i(glGetUniformLocation(program, "height"), height);
 
         glDrawElements(GL_PATCHES, 4, GL_UNSIGNED_INT, 0);
 

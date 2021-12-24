@@ -146,8 +146,8 @@ int main()
     {
         glBindTexture(GL_TEXTURE_2D, blur_texture[i]);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, height_w, height_h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
     unsigned int blur_fbo;
@@ -168,9 +168,9 @@ int main()
     // Snow deforming objects
     Object cubes[] = 
     {
-        Create_object::Box(Vector3f(20, 12, 25), Vector3f(10, 10, 10), Vector3f(1, 0, 0)),
-        Create_object::Box(Vector3f(-20, 10, 10), Vector3f(7, 7, 7), Vector3f(0, 1, 0)),
-        Create_object::Box(Vector3f(-5, 15, -25), Vector3f(14, 14, 14), Vector3f(0, 0, 1))
+        Create_object::Box(Vector3f(20, 12, 25), Vector3f(10, 10, 10), Vector3f(0.3f, 0.2f, 0.2f)),
+        Create_object::Box(Vector3f(-20, 10, 10), Vector3f(7, 7, 7), Vector3f(0.4f, 0.5f, 0.4f)),
+        Create_object::Box(Vector3f(-5, 15, -25), Vector3f(14, 14, 14), Vector3f(0.6f, 0.6f, 0.7f))
     };
     
     // Miscellaneous objects
@@ -247,7 +247,8 @@ int main()
             glPolygonMode( GL_FRONT_AND_BACK, polygon_mode );
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            Renderer::Draw_terrain(snow, 4, camera, color_map, final_snow_map);
+            Renderer::Draw_terrain(snow, 4, camera, color_map, final_snow_map, window_w, window_h);
+            Renderer::Draw_terrain(snow, 4, camera, color_map, final_snow_map, window_w, window_h, 0, true);
             Renderer::Draw_simple(&ground, 1, camera);
             Renderer::Draw_simple(cubes, 3, camera);
             glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );

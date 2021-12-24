@@ -9,6 +9,13 @@ uniform int width;
 uniform int height;
 layout (binding = 0) uniform sampler2D snow_deform_map;
 
+vec4 texel_height(ivec2 texel)
+{
+    texel.x = clamp(texel.x, 0, width - 1);
+    texel.y = clamp(texel.y, 0, height - 1);
+    return texelFetch(snow_deform_map, texel, 0);
+}
+
 vec4 snow_depress(ivec2 itex_coord)
 {
     const int half_dim = 20;
@@ -18,7 +25,7 @@ vec4 snow_depress(ivec2 itex_coord)
         {
             ivec2 itex_sample = itex_coord + ivec2(x, y);
             if (itex_sample.x >= 0 && itex_sample.x < width && itex_sample.y >= 0 && itex_sample.y < height && texelFetch(snow_deform_map, itex_sample, 0).r < 1.0)
-                return texelFetch(snow_deform_map, itex_coord, 0);
+                return texel_height(itex_coord);
         }
     }
     return vec4(0.8, 0, 0, 1);
