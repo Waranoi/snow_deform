@@ -9,41 +9,51 @@ in VERTEX
 out vec4 frag_color;
 
 uniform vec3 object_col;
-uniform int width;
-uniform int height;
+uniform bool norm_color;
+uniform float snow_height;
+uniform float surface_width;
+uniform float surface_height;
+uniform float texture_width;
+uniform float texture_height;
 layout (binding = 0) uniform sampler2D color_map;
 layout (binding = 1) uniform sampler2D height_map;
 
 float texel_height(ivec2 texel)
 {
-    texel.x = clamp(texel.x, 0, width - 1);
-    texel.y = clamp(texel.y, 0, height - 1);
+    texel.x = clamp(texel.x, 0, int(texture_width) - 1);
+    texel.y = clamp(texel.y, 0, int(texture_height) - 1);
     return texelFetch(height_map, texel, 0).r;
 }
 
 void main()
 {
+    ivec2 itex_coord = ivec2(vertex.tex_coord.x * texture_width, vertex.tex_coord.y * texture_height);
+
     // Calculate deformed terrain normals using the finite difference method
-    /*ivec2 itex_coord = ivec2(tex_coord.x * width, tex_coord.y * height);
-    float h_right = texel_height(itex_coord + ivec2(1, 0));
-    float h_left = texel_height(itex_coord + ivec2(-1, 0));
-    float h_top = texel_height(itex_coord + ivec2(0, 1));
-    float h_bot = texel_height(itex_coord + ivec2(0, -1));
-    float offset = 1.0 / width;
-    vec3 terrain_norm = vec3(h_left - h_right, offset * 2, h_bot - h_top);
+    // Offset is 1 texel
+    // Multiply fetched height with snow_height to get height of snow in world space
+    float h_right = texel_height(itex_coord + ivec2(1, 0))  * snow_height;
+    float h_left =  texel_height(itex_coord + ivec2(-1, 0)) * snow_height;
+    float h_top =   texel_height(itex_coord + ivec2(0, 1))  * snow_height;
+    float h_bot =   texel_height(itex_coord + ivec2(0, -1)) * snow_height;
+
+    // The y-axis of the terrain normal should be double the offset.
+    float h_x = h_left - h_right;
+    float h_y = 2;
+    float h_z = h_bot - h_top;
+
+    // The x and z-axis of the terrain normal is in world space, so the y-axis needs to be transformed to world space to match
+    // Take the width of the terrain in world space and divide it by the width of the texture. Multiply this with the offset to get the offset in world space
+    //vec3 terrain_norm = vec3(h_x, h_y * (surface_width / texture_width), h_z);
+    // Instead we divide the x-axis with surface_width / texture_width and the y-axis with surface_height / texture_height.
+    // If we don't do this then the height has to be the same as the width for the surface and the texture.
+    vec3 terrain_norm = vec3(h_x / (surface_width / texture_width), h_y, h_z / (surface_height / texture_height));
     terrain_norm = normalize(terrain_norm);
 
-    vec2 offset = 1.0 / vec2(width, height);
-    vec2 half_offset = 0.5 * offset;
-    float h_right = texture(height_map, tex_coord + vec2(half_offset.x, 0)).r;
-    float h_left = texture(height_map, tex_coord + vec2(-half_offset.x, 0)).r;
-    float h_top = texture(height_map, tex_coord + vec2(0, half_offset.y)).r;
-    float h_bot = texture(height_map, tex_coord + vec2(0, -half_offset.y)).r;
-    vec3 terrain_norm = vec3(h_left - h_right, offset.x, h_bot - h_top);
-    terrain_norm = normalize(terrain_norm);*/
-
-    if (vertex.color == vec3(0))
-        frag_color = texture(color_map, vertex.tex_coord);
-    else
+    if (vertex.color != vec3(0))
         frag_color = vec4(vertex.color, 1);
+    else if (norm_color)
+        frag_color = vec4(abs(terrain_norm), 1);
+    else
+        frag_color = texture(color_map, vertex.tex_coord);
 }

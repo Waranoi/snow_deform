@@ -13,8 +13,8 @@ out vec2 es_tex_coord[];
 
 void main()
 {
-    es_norm[gl_InvocationID] = cs_norm[gl_InvocationID];
     es_pos[gl_InvocationID] = cs_pos[gl_InvocationID];
+    es_norm[gl_InvocationID] = cs_norm[gl_InvocationID];
     es_tex_coord[gl_InvocationID] = cs_tex_coord[gl_InvocationID];
 
     gl_TessLevelOuter[0] = 64;

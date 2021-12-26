@@ -24,6 +24,7 @@ Vector3f prev_rot;
 
 int render_depth = 0;
 unsigned int polygon_mode = GL_FILL;
+bool normal_map = false;
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
@@ -247,8 +248,7 @@ int main()
             glPolygonMode( GL_FRONT_AND_BACK, polygon_mode );
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            Renderer::Draw_terrain(snow, 4, camera, color_map, final_snow_map, window_w, window_h);
-            Renderer::Draw_terrain(snow, 4, camera, color_map, final_snow_map, window_w, window_h, 0, true);
+            Renderer::Draw_terrain(snow, 4, camera, color_map, final_snow_map, window_w, window_h, 100, 100, 0, false, normal_map);
             Renderer::Draw_simple(&ground, 1, camera);
             Renderer::Draw_simple(cubes, 3, camera);
             glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
@@ -328,6 +328,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             polygon_mode = GL_LINE;
         else
             polygon_mode = GL_FILL;
+    }
+
+    if (key == GLFW_KEY_N && action == GLFW_PRESS)
+    {
+        normal_map = !normal_map;
     }
 
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)

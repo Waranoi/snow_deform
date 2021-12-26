@@ -17,12 +17,12 @@ out VERTEX
 uniform float radius = 0;
 uniform mat4 proj;
 uniform mat4 view;
-uniform int width;
-uniform int height;
+uniform float snow_height;
 layout (binding = 1) uniform sampler2D height_map;
 
 void main()
 {
+    // Used for debug_normals_gs geometry shader
     vertex.color = vec3(0);
     
     // Interpolate texture coordinates
@@ -56,19 +56,8 @@ void main()
         vertex.norm = es_norm[0];
     }
 
-    float height = texture(height_map, vertex.tex_coord).x * 10.0;
+    float height_offset = texture(height_map, vertex.tex_coord).x * snow_height;
 
-    vec3 final_pos = p + vertex.norm * height;
+    vec3 final_pos = p + vertex.norm * height_offset;
     gl_Position = proj * view * vec4(final_pos, 1);
-
-    /*vec2 offset = 1.0 / vec2(width, height);
-    vec2 half_offset = 0.5 * offset;
-    float h_right = texture(height_map, vertex.tex_coord + vec2(half_offset.x, 0)).r;
-    float h_left = texture(height_map, vertex.tex_coord + vec2(-half_offset.x, 0)).r;
-    float h_top = texture(height_map, vertex.tex_coord + vec2(0, half_offset.y)).r;
-    float h_bot = texture(height_map, vertex.tex_coord + vec2(0, -half_offset.y)).r;
-    vec3 terrain_norm = vec3(h_left - h_right, offset.x, h_bot - h_top);
-    terrain_norm = normalize(terrain_norm);
-    vertex.norm = terrain_norm;*/
-    // why does it now work, maybe play around with smooth and flat keywords to see if i can figure out why it doesn't work https://gamedev.stackexchange.com/questions/45387/how-are-vertex-shader-outs-sent-as-inputs-to-the-fragment-shader
 }

@@ -143,7 +143,7 @@ void Renderer::Draw_snow_depression(Object &object, Camera camera, unsigned int 
     
 }
 
-void Renderer::Draw_gaussian_blur(Object &object, Camera camera, unsigned int source_texture, Vector2i direction, int width, int height)
+void Renderer::Draw_gaussian_blur(Object &object, Camera camera, unsigned int source_texture, Vector2i direction, int texture_width, int texture_height)
 {
     unsigned int program = gaussian_blur_shader.Get_program();
     glUseProgram(program);
@@ -173,8 +173,8 @@ void Renderer::Draw_gaussian_blur(Object &object, Camera camera, unsigned int so
     glUniform3fv(glGetUniformLocation(program, "object_col"), 1, object.color);
     glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
     glUniform2iv(glGetUniformLocation(program, "dir"), 1, direction);
-    glUniform1i(glGetUniformLocation(program, "width"), width);
-    glUniform1i(glGetUniformLocation(program, "height"), height);
+    glUniform1i(glGetUniformLocation(program, "width"), texture_width);
+    glUniform1i(glGetUniformLocation(program, "height"), texture_height);
 
     glDrawElements(GL_TRIANGLES, object.points, GL_UNSIGNED_INT, nullptr);
 
@@ -183,10 +183,10 @@ void Renderer::Draw_gaussian_blur(Object &object, Camera camera, unsigned int so
     
 }
 
-void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned int color_map, unsigned int height_map, int width, int height, float radius, bool debug)
+void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned int color_map, unsigned int height_map, float texture_width, float texture_height, float surface_width, float surface_height, float radius, bool debug_vertex_normals, bool debug_fragment_normals)
 {
     unsigned int program;
-    if (debug)
+    if (debug_vertex_normals)
         program = terrain_shader_debug.Get_program();
     else
         program = terrain_shader.Get_program();
@@ -223,8 +223,12 @@ void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned 
 
         glUniform3fv(glGetUniformLocation(program, "object_col"), 1, object.color);
         glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
-        glUniform1i(glGetUniformLocation(program, "width"), width);
-        glUniform1i(glGetUniformLocation(program, "height"), height);
+        glUniform1i(glGetUniformLocation(program, "norm_color"), debug_fragment_normals);
+        glUniform1f(glGetUniformLocation(program, "snow_height"), 10.0f);
+        glUniform1f(glGetUniformLocation(program, "texture_width"), texture_width);
+        glUniform1f(glGetUniformLocation(program, "texture_height"), texture_height);
+        glUniform1f(glGetUniformLocation(program, "surface_width"), surface_width);
+        glUniform1f(glGetUniformLocation(program, "surface_height"), surface_height);
 
         glDrawElements(GL_PATCHES, 4, GL_UNSIGNED_INT, 0);
 
