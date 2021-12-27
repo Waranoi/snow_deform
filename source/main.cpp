@@ -193,6 +193,10 @@ int main()
     Camera ortho_camera = Camera::CreateOrthographic();
     Camera depth_camera = Camera::CreateOrthographic();
 
+    // Light
+    Vector3f light_pos = Vector3f(50, 50, 50);
+    Vector3f light_col = Vector3f(1, 1, 1);
+
     while (!glfwWindowShouldClose(window))
     {
         auto begin = std::chrono::steady_clock::now();
@@ -248,9 +252,9 @@ int main()
             glPolygonMode( GL_FRONT_AND_BACK, polygon_mode );
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            Renderer::Draw_terrain(snow, 4, camera, color_map, final_snow_map, window_w, window_h, 100, 100, 0, false, normal_map);
+            Renderer::Draw_terrain(snow, 4, camera, light_pos, light_col, color_map, final_snow_map, window_w, window_h, 100, 100, 0, false, normal_map);
             Renderer::Draw_simple(&ground, 1, camera);
-            Renderer::Draw_simple(cubes, 3, camera);
+            Renderer::Draw_phong(cubes, 3, camera, light_pos, light_col);
             glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
             if (render_depth == 1)

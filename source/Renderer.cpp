@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 static Shader mvp_shader;
+static Shader phong_shader;
 static Shader snow_shader;
 static Shader depress_snow_shader;
 static Shader gaussian_blur_shader;
@@ -13,6 +14,7 @@ static Shader terrain_shader_debug;
 void Renderer::Init()
 {
     mvp_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/simple_mvp_fs");
+    phong_shader = Shader("../resources/shaders/phong_vs", "../resources/shaders/phong_fs");
     snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_deform_fs");
     depress_snow_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/snow_depress_fs");
     gaussian_blur_shader = Shader("../resources/shaders/simple_mvp_vs", "../resources/shaders/gaussian_blur_fs");
@@ -54,6 +56,42 @@ void Renderer::Draw_simple(Object *objects, int count, Camera camera)
         glUniform1i(glGetUniformLocation(program, "use_texture"), object.color_map);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, object.color_map);
+
+        glDrawElements(GL_TRIANGLES, object.points, GL_UNSIGNED_INT, nullptr);
+
+        glUniform3fv(glGetUniformLocation(program, "object_col"), 1, Vector3f(1, 1, 1));
+        glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
+    }
+}
+
+void Renderer::Draw_phong(Object *objects, int count, Camera camera, Vector3f light_pos, Vector3f light_col)
+{
+    unsigned int program = phong_shader.Get_program();
+    glUseProgram(program);
+    glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
+    glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
+    glUniform3fv(glGetUniformLocation(program, "light_pos"), 1, light_pos);
+    glUniform3fv(glGetUniformLocation(program, "light_col"), 1, light_col);
+    glUniform3fv(glGetUniformLocation(program, "view_pos"), 1, camera.Get_view().getTranslation());
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    for (int i = 0; i < count; i++)
+    {
+        Object object = objects[i];
+        glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object.ebo);
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, nullptr);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
+
+        glUniform3fv(glGetUniformLocation(program, "object_col"), 1, object.color);
+        glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, object.model);
 
         glDrawElements(GL_TRIANGLES, object.points, GL_UNSIGNED_INT, nullptr);
 
@@ -183,7 +221,7 @@ void Renderer::Draw_gaussian_blur(Object &object, Camera camera, unsigned int so
     
 }
 
-void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned int color_map, unsigned int height_map, float texture_width, float texture_height, float surface_width, float surface_height, float radius, bool debug_vertex_normals, bool debug_fragment_normals)
+void Renderer::Draw_terrain(Object *objects, int count, Camera camera, Vector3f light_pos, Vector3f light_col, unsigned int color_map, unsigned int height_map, float texture_width, float texture_height, float surface_width, float surface_height, float radius, bool debug_vertex_normals, bool debug_fragment_normals)
 {
     unsigned int program;
     if (debug_vertex_normals)
@@ -195,7 +233,9 @@ void Renderer::Draw_terrain(Object *objects, int count, Camera camera, unsigned 
     glUniform1f(glGetUniformLocation(program, "radius"), radius);
     glUniformMatrix4fv(glGetUniformLocation(program, "proj"), 1, GL_FALSE, camera.Get_projection());
     glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE, camera.Get_view());
-    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, Matrix4f());
+    glUniform3fv(glGetUniformLocation(program, "light_pos"), 1, light_pos);
+    glUniform3fv(glGetUniformLocation(program, "light_col"), 1, light_col);
+    glUniform3fv(glGetUniformLocation(program, "view_pos"), 1, camera.Get_view().getTranslation());
 
     // Will there be a noticeable seam between the edges of a texture if I use GL_CLAMP_TO_EDGE instead
     // of GL_NEAREST if the edges of the plane we're mapping to are wrapped around to meet each other?

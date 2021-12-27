@@ -4,16 +4,19 @@
 layout (vertices = 4) out;
 
 in vec3 cs_pos[];
+in vec3 cs_frag_pos[];
 in vec3 cs_norm[];
 in vec2 cs_tex_coord[];
 
 out vec3 es_pos[];
+out vec3 es_frag_pos[];
 out vec3 es_norm[];
 out vec2 es_tex_coord[];
 
 void main()
 {
     es_pos[gl_InvocationID] = cs_pos[gl_InvocationID];
+    es_frag_pos[gl_InvocationID] = cs_frag_pos[gl_InvocationID];
     es_norm[gl_InvocationID] = cs_norm[gl_InvocationID];
     es_tex_coord[gl_InvocationID] = cs_tex_coord[gl_InvocationID];
 

@@ -4,11 +4,13 @@
 layout(quads, equal_spacing, ccw) in;
 
 in vec3 es_pos[];
+in vec3 es_frag_pos[];
 in vec3 es_norm[];
 in vec2 es_tex_coord[];
 
 out VERTEX
 {
+    vec3 frag_pos;
     vec3 norm;
     vec2 tex_coord;
     vec3 color;
@@ -60,4 +62,10 @@ void main()
 
     vec3 final_pos = p + vertex.norm * height_offset;
     gl_Position = proj * view * vec4(final_pos, 1);
+
+    // Calculate frag pos
+    vec3 fp1 = mix(es_frag_pos[0], es_frag_pos[1], gl_TessCoord.x);
+    vec3 fp2 = mix(es_frag_pos[3], es_frag_pos[2], gl_TessCoord.x);
+    vec3 fp = mix(fp1, fp2, gl_TessCoord.y);
+    vertex.frag_pos = fp + vertex.norm * height_offset;
 }

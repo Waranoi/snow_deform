@@ -4,13 +4,15 @@ layout(line_strip, max_vertices=6) out;
 
 in VERTEX
 {
-	vec3 norm;
+    vec3 frag_pos;
+    vec3 norm;
     vec2 tex_coord;
     vec3 color;
 } vertices[];
 
 out VERTEX
 {
+    vec3 frag_pos;
     vec3 norm;
     vec2 tex_coord;
     vec3 color;
@@ -18,21 +20,23 @@ out VERTEX
 
 void main()
 {
-	for(int i = 0; i < 3; i++) 
-	{ 
-		gl_Position = gl_in[i].gl_Position;
-		vertex.norm = vertices[i].norm;
-		vertex.tex_coord = vertices[i].tex_coord;
-		vertex.color = abs(vertices[i].norm);
-		EmitVertex();
+    for(int i = 0; i < 3; i++) 
+    { 
+        gl_Position = gl_in[i].gl_Position;
+        vertex.frag_pos = vertices[i].frag_pos;
+        vertex.norm = vertices[i].norm;
+        vertex.tex_coord = vertices[i].tex_coord;
+        vertex.color = abs(vertices[i].norm);
+        EmitVertex();
 
-		gl_Position = gl_in[i].gl_Position;
-		gl_Position.xyz += vertices[i].norm;
-		vertex.norm = vertices[i].norm;
-		vertex.tex_coord = vertices[i].tex_coord;
-		vertex.color = abs(vertices[i].norm);
-		EmitVertex();
-		
-		EndPrimitive();
-	}
+        gl_Position = gl_in[i].gl_Position;
+        gl_Position.xyz += vertices[i].norm;
+        vertex.frag_pos = vertices[i].frag_pos;
+        vertex.norm = vertices[i].norm;
+        vertex.tex_coord = vertices[i].tex_coord;
+        vertex.color = abs(vertices[i].norm);
+        EmitVertex();
+        
+        EndPrimitive();
+    }
 }
