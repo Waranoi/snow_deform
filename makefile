@@ -8,13 +8,13 @@ OL := -O0
 CPPFLAGS := -std=c++11
 
 EXCLUDESRCS := 
-EXCLUDEDIRS := source/vmath-0.13
+EXCLUDEDIRS := source/vmath-0.13 source/assimp
 
 SRCS := $(SRCAPP) source/vmath-0.13/src/vmath.cpp
 INCLUDE := -Isource/vmath-0.13/src
 
-LDIR := 
-LIBS := -ldl -lglfw
+LDIR := -Lassimp/lib -Wl,-rpath=../assimp/lib
+LIBS := -ldl -lglfw -lassimp
 
 ########## DO NOT EDIT ANYTHING BELOW THIS ##########
 ########## DO NOT EDIT ANYTHING BELOW THIS ##########
