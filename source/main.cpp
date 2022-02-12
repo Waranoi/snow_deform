@@ -155,24 +155,34 @@ int main()
     glGenFramebuffers(1, &blur_fbo);
 
     // Environmental objects
-    Object snow[] =
+    float patch_size[2] = { 100, 100 };
+    int patch_count[2] = { 5, 5 };
+    float snow_size[2] = { patch_size[0] * patch_count[0], patch_size[1] * patch_count[1] };
+    float snow_origo[2] = { snow_size[0] / 2 - snow_size[0], snow_size[1] / 2 - snow_size[1] };
+    float patch_uv_size[2] = { 1.0f / patch_count[0], 1.0f / patch_count[1] };
+    Object snow[patch_count[0] * patch_count[1]];
+    for (int i = 0; i < patch_count[0]; i++)
     {
-        Create_object::Patch(Vector2f(-50, -50), Vector2f(0, 0), Vector2f(0, 0), Vector2f(0.5f, 0.5f), Vector3f(0, 0, 1)),
-        Create_object::Patch(Vector2f(0, -50), Vector2f(50, 0), Vector2f(0.5f, 0), Vector2f(1, 0.5f), Vector3f(0, 0, 1)),
-        Create_object::Patch(Vector2f(0, 0), Vector2f(50, 50), Vector2f(0.5f, 0.5f), Vector2f(1, 1), Vector3f(0, 0, 1)),
-        Create_object::Patch(Vector2f(-50, 0), Vector2f(0, 50), Vector2f(0, 0.5f), Vector2f(0.5f, 1), Vector3f(0, 0, 1))
-    };
+        for (int j = 0; j < patch_count[1]; j++)
+        {
+            float patch_origo[2] = { snow_origo[0]+patch_size[0]*i, snow_origo[1]+patch_size[1]*j };
+            float patch_uv_origo[2] = { patch_uv_size[0]*i, patch_uv_size[1]*j };
+            snow[j*patch_count[0]+i] = Create_object::Patch(Vector2f(patch_origo[0], patch_origo[1]), Vector2f(patch_origo[0] + patch_size[0], patch_origo[1] + patch_size[1]), Vector2f(patch_uv_origo[0], patch_uv_origo[1]), Vector2f(patch_uv_origo[0] + patch_uv_size[0], patch_uv_origo[1] + patch_uv_size[0]), Vector3f(0, 0, 1));
+        }
+    }
+/*    Object snow[] =
+    {
+        Create_object::Patch(Vector2f(-100, -100), Vector2f(0, 0), Vector2f(0, 0), Vector2f(0.5f, 0.5f), Vector3f(0, 0, 1)),
+        Create_object::Patch(Vector2f(0, -100), Vector2f(100, 0), Vector2f(0.5f, 0), Vector2f(1, 0.5f), Vector3f(0, 0, 1)),
+        Create_object::Patch(Vector2f(0, 0), Vector2f(100, 100), Vector2f(0.5f, 0.5f), Vector2f(1, 1), Vector3f(0, 0, 1)),
+        Create_object::Patch(Vector2f(-100, 0), Vector2f(0, 100), Vector2f(0, 0.5f), Vector2f(0.5f, 1), Vector3f(0, 0, 1))
+    };*/
 
     Object ground = Create_object::Plane(Vector3f(), Vector2f(50, 50), Vector3f(0.30f, 0.16f, 0.16f));
     ground.Rotate(Vector3f(90.0f, 0.0f, 0.0f));
 
     // Snow deforming objects
-    Object cubes[] = 
-    {
-        Create_object::Box(Vector3f(20, 12, 25), Vector3f(10, 10, 10), Vector3f(0.3f, 0.2f, 0.2f)),
-        Create_object::Box(Vector3f(-20, 10, 10), Vector3f(7, 7, 7), Vector3f(0.4f, 0.5f, 0.4f)),
-        Create_object::Box(Vector3f(-5, 15, -25), Vector3f(14, 14, 14), Vector3f(0.6f, 0.6f, 0.7f))
-    };
+    Object player = Create_object::Box(Vector3f(0, 15, 0), Vector3f(14, 14, 14), Vector3f(0.6f, 0.6f, 0.7f));
     
     // Miscellaneous objects
     Object simple_square = Create_object::Plane(Vector3f(), Vector2f(1, 1), Vector3f(0, 1, 0));
@@ -182,10 +192,11 @@ int main()
     
     // Cameras
     Camera camera = Camera::CreatePerspective();
-    camera.Move(Vector3f(0.0f, 50.0f, 75.0f));
-    camera.Rotate(Vector3f(-30.0f, 0.0f, 0.0f));
+    camera.Offset(Vector3f(0, 0, -50));
+    camera.Move(Vector3f(0, 60, 50));
+    camera.Rotate(Vector3f(-30, 0, 0));
 
-    Camera fbo_camera = Camera::CreateOrthographic(10, 0, 50, -50, 50, -50);
+    Camera fbo_camera = Camera::CreateOrthographic(10, 0, 250, -250, 250, -250);
     fbo_camera.Move(Vector3f(0.0f, 0.0f, 0.0f));
     fbo_camera.Rotate(Vector3f(90.0f, 0.0f, 0.0f));
 
@@ -204,21 +215,22 @@ int main()
         // Game loop
         {
             // Directional movement
-            //camera.Move(movement * 1.0f);
-            cubes[2].Move(movement * 1.0f);
+            camera.Move(movement * 1.0f);
+            player.Move(movement * 1.0f);
             if (movement.y > 0.0f)
                 movement.y = std::max(movement.y - 1.0f, 0.0f);
             else if (movement.y < 0.0f)
                 movement.y = std::min(movement.y + 1.0f, 0.0f);
 
             // Rotational movement
-            camera.Rotate(prev_rot - rotation);
+            camera.Rotate(rotation - prev_rot);
+            player.Rotate(rotation - prev_rot);
             prev_rot = rotation;
 
             // Render fbo
             glBindFramebuffer(GL_FRAMEBUFFER, fbo);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            Renderer::Draw_simple(cubes, 3, fbo_camera);
+            Renderer::Draw_simple(&player, 1, fbo_camera);
 
             // Render snow height map
             int height_target = height_id;
@@ -252,9 +264,9 @@ int main()
             glPolygonMode( GL_FRONT_AND_BACK, polygon_mode );
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            Renderer::Draw_terrain(snow, 4, camera, light_pos, light_col, color_map, final_snow_map, window_w, window_h, 100, 100, 0, false, normal_map);
+            Renderer::Draw_terrain(snow, 25, camera, light_pos, light_col, color_map, final_snow_map, window_w, window_h, 100, 100, 0, false, normal_map);
             Renderer::Draw_simple(&ground, 1, camera);
-            Renderer::Draw_phong(cubes, 3, camera, light_pos, light_col);
+            Renderer::Draw_phong(&player, 1, camera, light_pos, light_col);
             glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
             if (render_depth == 1)
@@ -350,7 +362,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         rotate = true;
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
-        rotation = Vector3f(ypos, xpos, 0);
+        rotation = Vector3f(0, xpos, 0);
         prev_rot = rotation;
     }
     else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
@@ -360,7 +372,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (rotate)
-        rotation = Vector3f(ypos, xpos, 0);
+        rotation = Vector3f(0, xpos, 0);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)

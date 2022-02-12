@@ -7,6 +7,7 @@ public:
     Camera();
     void Move(Vector3f move);
     void Rotate(Vector3f rotate);
+    void Offset(Vector3f new_offset);
     Matrix4f Get_projection();
     Matrix4f Get_view();
 
@@ -16,5 +17,6 @@ public:
 private:
     Matrix4f projection;
     Matrix4f view;
+    Vector3f offset;
     float rot_x = 0;
 };

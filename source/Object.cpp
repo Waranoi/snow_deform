@@ -4,12 +4,12 @@
 
 void Object::Move(Vector3f move)
 {
-    model = Matrix4f::createTranslation(move.x, move.y, move.z) * model;
+    model = model * Matrix4f::createTranslation(move.x, move.y, move.z);
 }
 
 void Object::Rotate(Vector3f rotate)
 {
-    model = Matrix4f::createRotationAroundAxis(rotate.x, rotate.y, rotate.z) * model;
+    model = model * Matrix4f::createRotationAroundAxis(rotate.x, rotate.y, rotate.z);
 }
 
 void Object::Bind_array()
@@ -35,8 +35,8 @@ void Object::Bind_indices(int* indices, int length)
 
 Object Create_object::Box(Vector3f center, Vector3f half_dims, Vector3f color, unsigned int color_map)
 {
-    Vector3f min = center - half_dims;
-    Vector3f max = center + half_dims;
+    Vector3f min = half_dims * -1;
+    Vector3f max = half_dims;
 
     float vertices[] = 
     {
@@ -44,7 +44,7 @@ Object Create_object::Box(Vector3f center, Vector3f half_dims, Vector3f color, u
         max.x, max.y, max.z,
         0.0f, 0.0f, 1.0f,
         1.0f, 1.0f,
-        min.x, max.y, max.z,
+        min.x, half_dims.y, max.z,
         0.0f, 0.0f, 1.0f,
         0.0f, 1.0f,
         min.x, min.y, max.z,
@@ -158,13 +158,14 @@ Object Create_object::Box(Vector3f center, Vector3f half_dims, Vector3f color, u
     cube.Bind_indices(indices, sizeof(indices) / sizeof(int));
     cube.color = color;
     cube.color_map = color_map;
+    cube.Move(center);
     return cube;
 }
 
 Object Create_object::Plane(Vector3f center, Vector2f half_dims, Vector3f color, unsigned int color_map)
 {
-    Vector3f min = center - Vector3f(half_dims.x, half_dims.y, 0);
-    Vector3f max = center + Vector3f(half_dims.x, half_dims.y, 0);
+    Vector2f min = half_dims * -1;
+    Vector2f max = half_dims;
 
     float vertices[] = 
     {
@@ -194,6 +195,7 @@ Object Create_object::Plane(Vector3f center, Vector2f half_dims, Vector3f color,
     plane.Bind_indices(indices, sizeof(indices) / sizeof(int));
     plane.color = color;
     plane.color_map = color_map;
+    plane.Move(center);
     return plane;
 }
 

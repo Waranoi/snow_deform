@@ -18,7 +18,12 @@ void Camera::Rotate(Vector3f rotate)
     else if (rot_x < -90.0f)
         rot_x = -90.0f;
 
-    view = Matrix4f::createRotationAroundAxis(0, rotate.y, 0) * view;
+    view = Matrix4f::createTranslation(offset.x, offset.y, offset.z) * Matrix4f::createRotationAroundAxis(0, -rotate.y, 0) * Matrix4f::createTranslation(-offset.x, -offset.y, -offset.z) * view;
+}
+
+void Camera::Offset(Vector3f new_offset)
+{
+    offset = new_offset;
 }
 
 Matrix4f Camera::Get_projection()
